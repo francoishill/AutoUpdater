@@ -66,6 +66,9 @@
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -88,6 +91,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="..\..\SharedClasses\AboutWindow2.xaml">
+      <Link>AboutWindow2.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\SharedClasses\WpfNotificationWindow.xaml">
       <Link>WpfNotificationWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -107,6 +115,10 @@
     <Compile Include="..\..\..\..\..\..\..\Francois\Dev\VSprojects\SharedClasses\UserMessages.designer.cs">
       <Link>UserMessages.designer.cs</Link>
       <DependentUpon>UserMessages.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\AboutWindow2.xaml.cs">
+      <Link>AboutWindow2.xaml.cs</Link>
+      <DependentUpon>AboutWindow2.xaml</DependentUpon>
     </Compile>
     <Compile Include="..\..\SharedClasses\AutoUpdating.cs">
       <Link>AutoUpdating.cs</Link>
@@ -175,6 +187,9 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="app.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

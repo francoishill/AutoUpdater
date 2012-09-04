@@ -149,6 +149,8 @@
 							   PreviewMouseMove='mainBorder_PreviewMouseMove' />
 				<!--</StatusBar>-->
 			</DockPanel>
+			<Label Height='10' Padding='0' FontSize='8' Content='About' Foreground='White' HorizontalAlignment='Right'
+				   MouseLeftButtonUp='aboutLabel_MouseLeftButtonUp'/>
 		</StackPanel>
 	</Border>
 </Window>

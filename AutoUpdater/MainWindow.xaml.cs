@@ -389,6 +389,16 @@ namespace AutoUpdater
 		{
 			this.Close();
 		}
+
+		private void aboutLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			new AboutWindow2(new System.Collections.ObjectModel.ObservableCollection<DisplayItem>()
+			{
+				new DisplayItem("Author", "Francois Hill"),
+				new DisplayItem("Icon obtained from", "http://www.visualpharm.com", "http://www.visualpharm.com")
+			})
+			.ShowDialog();
+		}
 	}
 
 	public class PublishDetails
