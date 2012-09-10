@@ -17,6 +17,7 @@ using System.Threading;
 using System.Windows.Threading;
 using System.Net;
 using System.ComponentModel;
+using System.Web;
 
 namespace AutoUpdater
 {
@@ -36,7 +37,7 @@ namespace AutoUpdater
 			InitializeComponent();
 		}
 
-		public MainWindow(string currentVersion, PublishDetails newerversionDetails)
+		public MainWindow(string currentVersion, DateTime currentInstalledData, PublishDetails newerversionDetails)
 		{
 			InitializeComponent();
 
@@ -46,10 +47,13 @@ namespace AutoUpdater
 
 			this.labelMessage.Content = "Update available for " + newerversionDetails.ApplicationName;
 			this.labelCurrentVersion.Content = "Current version is " + currentVersion;
+			this.labelCurrentVersionDate.Content = "Date is " + currentInstalledData.ToString("yyyy-MM-dd HH:mm:ss");
 			this.labelNewVersion.Content = string.Format(
 				"Newest version online is {0} ({1} kBs to be downloaded)",
 				newerversionDetails.ApplicationVersion,
 				GetKilobytesFromBytes(newerversionDetails.SetupSize));
+			this.labelNewVersionDate.Content = "Published date is " + newerversionDetails.PublishedDate.ToString("yyyy-MM-dd HH:mm:ss");
+
 
 			originalScale = mainBorder.LayoutTransform as ScaleTransform;
 			if (originalScale == null)
@@ -186,7 +190,7 @@ namespace AutoUpdater
 					{
 						Application.Current.Dispatcher.Invoke((Action)delegate
 						{
-							tmpform = new MainWindow(InstalledVersion, detailsIfNewer);
+							tmpform = new MainWindow(InstalledVersion, File.GetCreationTime(applicationExePath), detailsIfNewer);
 							tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
 							//MainWindow thisform = frm as MainWindow;
 							try
@@ -220,9 +224,9 @@ namespace AutoUpdater
 		}
 
 		WebClient client;
-		DateTime startTime;
-		string downloadFilename;
-		private void Button_Click(object sender, RoutedEventArgs e)
+		//DateTime startTime;
+		string localFileTempPath;
+		private void downloadButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (isSmall)
 				return;
@@ -230,30 +234,167 @@ namespace AutoUpdater
 			DownloadNow();
 		}
 
+		private bool isBusyDownloading = false;
 		private void DownloadNow()
 		{
+			if (isBusyDownloading)
+			{
+				UserMessages.ShowWarningMessage("Already busy downloading please be patient");
+				return;
+			}
+
+			isBusyDownloading = true;
+			/*WebInterop.EnsureHttpsTrustAll();*/
 			labelStatus.Visibility = System.Windows.Visibility.Visible;
 			labelStatus.Content = "Please wait, downloading...";
+			labelStatus.UpdateLayout();
 			progressBar1.Value = 0;
 			progressBar1.Minimum = 0;
 			progressBar1.Visibility = System.Windows.Visibility.Visible;
 			progressBar1.Maximum = 100;
+			progressBar1.UpdateLayout();
 
-			startTime = DateTime.Now;
+			ThreadingInterop.PerformVoidFunctionSeperateThread(() =>
+			{
+				try
+				{
+					//https://fjh.dyndns.org/downloadownapps.php?relativepath=minipopuptasks/Setup_MiniPopupTasks_1_0_0_52.exe
+					localFileTempPath = Path.GetTempPath().TrimEnd('\\') + "\\Setup_Newest_" + newerversionDetails.ApplicationName + ".exe";
+
+					if (!newerversionDetails.FtpUrl.Contains('?'))
+					{
+						UserMessages.ShowWarningMessage("Cannot obtain relative path from download URL, no ? found in url: " + newerversionDetails.FtpUrl);
+						return;
+					}
+
+					int indexOfQuestionMark = newerversionDetails.FtpUrl.IndexOf('?');
+					var parsed = HttpUtility.ParseQueryString(newerversionDetails.FtpUrl.Substring(indexOfQuestionMark + 1));
+					var relativePath = parsed.GetValues("relativepath");
+					if (relativePath == null || relativePath.Length == 0)
+					{
+						UserMessages.ShowWarningMessage("Cannot obtain relative path from download URL, unable to find relativepath value in url:" + newerversionDetails.FtpUrl);
+						return;
+					}
+					else if (relativePath.Length > 1)
+					{
+						UserMessages.ShowWarningMessage("Cannot obtain relative path, multiple relative path values found in url: " + newerversionDetails.FtpUrl);
+						return;
+					}
+
+					string err;
+					bool? downloadResult = PhpDownloadingInterop.PhpDownloadFile(
+						relativePath[0],//We already checked for multiple items above
+						localFileTempPath,
+						null,//Download complete file at this stage
+						out err,
+						(progperc, bytespersec) =>
+						{
+							UpdateProgress(progperc, true);
+							UpdateStatus(string.Format("Download speed = {0:0.###} kB/s", bytespersec / 1024D), true);
+						},
+						delegate { return true; });//TODO: Validate all HTTPS/SSL certificates
+
+					CallFromSeparateThread(delegate
+					{
+						progressBar1.Visibility = System.Windows.Visibility.Collapsed;
+						labelStatus.Visibility = System.Windows.Visibility.Collapsed;
+					});
+
+					if (downloadResult != true)//Error occurred, client or server side
+					{
+						if (UserMessages.Confirm("The downloaded was unsuccessful due to the following error, download it again?"
+							+ Environment.NewLine + Environment.NewLine + err))
+						{
+							DownloadNow();
+							return;
+						}
+					}
+					else if (UserMessages.Confirm("The download is complete, do you want to close this application and install new version?"))
+					{
+						CallFromSeparateThread(delegate
+						{
+							labelMessage.Content = "Please be patient, busy closing application to install download...";
+							labelCurrentVersion.Visibility = System.Windows.Visibility.Collapsed;
+							labelNewVersion.Visibility = System.Windows.Visibility.Collapsed;
+							clickHereToDownloadButton.Visibility = System.Windows.Visibility.Collapsed;
+							progressBar1.Visibility = System.Windows.Visibility.Collapsed;
+							labelStatus.Visibility = System.Windows.Visibility.Collapsed;
+							Process.Start(localFileTempPath);
+							this.Close();
+						});
+					}
+					else
+						Process.Start("explorer", "/select,\"" + localFileTempPath + "\"");
+				}
+				finally
+				{
+					isBusyDownloading = false;
+				}
+			},
+			false);
+
+			/*startTime = DateTime.Now;
 			if (client == null)
 			{
 				client = new WebClient();
-				client.Credentials = new System.Net.NetworkCredential(
-					ftpUsername,
-					ftpPassword);
+				int usingHttpsNowInsteadOfFtpFollowingCommented;
+				//client.Credentials = new System.Net.NetworkCredential(
+				//    ftpUsername,
+				//    ftpPassword);
 				client.DownloadFileCompleted += new System.ComponentModel.AsyncCompletedEventHandler(client_DownloadFileCompleted);
 				client.DownloadProgressChanged += new System.Net.DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
 			}
 			downloadFilename = Path.GetTempPath().TrimEnd('\\') + "\\Setup_Newest_" + newerversionDetails.ApplicationName + ".exe";
-			client.DownloadFileAsync(new Uri(newerversionDetails.FtpUrl), downloadFilename);
+
+			int todoFindBetterWayForNextLine;
+			string url =
+				!newerversionDetails.FtpUrl.StartsWith("https:", StringComparison.InvariantCultureIgnoreCase)
+				? "https" + newerversionDetails.FtpUrl.Substring(newerversionDetails.FtpUrl.IndexOf(":"))
+				: newerversionDetails.FtpUrl;
+			string strToRemove = "https://fjh.dyndns.org/francois/websites/firepuma/";
+			if (url.StartsWith(strToRemove, StringComparison.InvariantCultureIgnoreCase))
+				url = "https://fjh.dyndns.org/" + url.Substring(strToRemove.Length);
+			//client.DownloadFileAsync(new Uri(newerversionDetails.FtpUrl), downloadFilename);
+			client.DownloadFileAsync(new Uri(url), downloadFilename);*/
 		}
 
-		void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+		private void UpdateStatus(string msg, bool fromSeparateThread = true)
+		{
+			Action<string> act = (message) =>
+			{
+				labelStatus.Content = message;
+				labelStatus.UpdateLayout();
+			};
+			if (fromSeparateThread)
+				this.Dispatcher.Invoke(act, msg);
+			else
+				act(msg);
+		}
+
+		private void UpdateProgress(int progperc, bool fromSeparateThread = true)
+		{
+			Action<int> act = (prog) =>
+			{
+				progressBar1.Value = prog;
+				progressBar1.UpdateLayout();
+			};
+			if (fromSeparateThread)
+				this.Dispatcher.Invoke(act, progperc);
+			else
+				act(progperc);
+		}
+
+		private void CallFromSeparateThread(Action action)
+		{
+			this.Dispatcher.Invoke(action);
+		}
+
+		private void CallFromSeparateThread<T>(Action<T> action, T arg1)
+		{
+			this.Dispatcher.Invoke(action, arg1);
+		}
+
+		/*void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
 		{
 			int progressPercentage = (int)Math.Round((double)100 * (double)e.BytesReceived / (double)newerversionDetails.SetupSize);//ev.ProgressPercentage;
 			double kiloBytesPerSecond = Math.Round(GetKilobytesFromBytes(e.BytesReceived) / DateTime.Now.Subtract(startTime).TotalSeconds, 3);
@@ -278,7 +419,7 @@ namespace AutoUpdater
 
 		void client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
 		{
-			if (downloadFilename.FileToMD5Hash() != newerversionDetails.MD5Hash)
+			if (localFileTempPath.FileToMD5Hash() != newerversionDetails.MD5Hash)
 			{
 				if (UserMessages.Confirm("The downloaded file is corrupt (different MD5Hash), download it again?"))
 				{
@@ -297,7 +438,7 @@ namespace AutoUpdater
 				progressBar1.Visibility = System.Windows.Visibility.Collapsed;
 				labelStatus.Visibility = System.Windows.Visibility.Collapsed;
 				//});
-				Process.Start(downloadFilename)
+				Process.Start(localFileTempPath)
 					;//.WaitForExit();
 				//if (exitApplicationAction == null)
 				//    Application.Exit();
@@ -306,12 +447,12 @@ namespace AutoUpdater
 				this.Close();
 			}
 			else
-				Process.Start("explorer", "/select,\"" + downloadFilename + "\"");
+				Process.Start("explorer", "/select,\"" + localFileTempPath + "\"");
 			//}
 
 			//if (restartDownloadRequired)
 			//    goto restartDownload;
-		}
+		}*/
 
 		private Point startPoint;
 		private void StackPanel_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
