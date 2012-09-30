@@ -34,7 +34,7 @@ namespace AutoUpdater
 			//args = new string[] { "", "checkforupdates", @"c:\windows\notepad.exe" };
 			if (args.Length < 3)
 			{
-				UserMessages.ShowWarningMessage("Not enough command-line arguments, must be: checkforupdates c:\\my\\path\\to\\exe");
+				UserMessages.ShowWarningMessage("Not enough command-line arguments, must be: command \"c:\\my\\path\\to\\exe\"");
 				mustExit = true;
 			}
 			else if (args[1] == "checkforupdates")
@@ -50,6 +50,13 @@ namespace AutoUpdater
 				else
 					AutoUpdater.MainWindow.CheckForUpdates(exePathToCheckForUpdates);
 			}
+			else if (args[1] == "installlatest")
+			{
+				string applicationName = args[2];
+				AutoUpdater.MainWindow.InstallLatest(applicationName);
+			}
+			else
+				UserMessages.ShowWarningMessage("AutoUpdater does not recognize command (from arguments): " + args[1]);
 
 			if (mustExit)
 				Application.Current.Shutdown((int)SharedClasses.AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode);

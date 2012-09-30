@@ -37,7 +37,7 @@ namespace AutoUpdater
 			InitializeComponent();
 		}
 
-		public MainWindow(string currentVersion, DateTime currentInstalledData, PublishDetails newerversionDetails)
+		public MainWindow(string currentVersion, DateTime? currentInstalledDate, PublishDetails newerversionDetails)
 		{
 			InitializeComponent();
 
@@ -45,15 +45,28 @@ namespace AutoUpdater
 			this.newerversionDetails = newerversionDetails;
 			this.Title = "Update available for " + newerversionDetails.ApplicationName;
 
-			this.labelMessage.Content = "Update available for " + newerversionDetails.ApplicationName;
-			this.labelCurrentVersion.Content = "Current version is " + currentVersion;
-			this.labelCurrentVersionDate.Content = "Date is " + currentInstalledData.ToString("yyyy-MM-dd HH:mm:ss");
-			this.labelNewVersion.Content = string.Format(
-				"Newest version online is {0} ({1} kBs to be downloaded)",
-				newerversionDetails.ApplicationVersion,
-				GetKilobytesFromBytes(newerversionDetails.SetupSize));
-			this.labelNewVersionDate.Content = "Published date is " + newerversionDetails.PublishedDate.ToString("yyyy-MM-dd HH:mm:ss");
-
+			if (currentVersion == null)
+			{
+				this.labelMessage.Content = "Download latest version of " + newerversionDetails.ApplicationName;
+				this.labelCurrentVersion.Visibility = System.Windows.Visibility.Collapsed;
+				this.labelCurrentVersionDate.Visibility = System.Windows.Visibility.Collapsed;
+				this.labelNewVersion.Content = string.Format(
+					"Newest version online is {0} ({1} kBs to be downloaded)",
+					newerversionDetails.ApplicationVersion,
+					GetKilobytesFromBytes(newerversionDetails.SetupSize));
+				this.labelNewVersionDate.Content = "Published date is " + newerversionDetails.PublishedDate.ToString("yyyy-MM-dd HH:mm:ss");
+			}
+			else
+			{
+				this.labelMessage.Content = "Update available for " + newerversionDetails.ApplicationName;
+				this.labelCurrentVersion.Content = "Current version is " + currentVersion;
+				this.labelCurrentVersionDate.Content = "Date is " + (currentInstalledDate ?? DateTime.MinValue).ToString("yyyy-MM-dd HH:mm:ss");
+				this.labelNewVersion.Content = string.Format(
+					"Newest version online is {0} ({1} kBs to be downloaded)",
+					newerversionDetails.ApplicationVersion,
+					GetKilobytesFromBytes(newerversionDetails.SetupSize));
+				this.labelNewVersionDate.Content = "Published date is " + newerversionDetails.PublishedDate.ToString("yyyy-MM-dd HH:mm:ss");
+			}
 
 			originalScale = mainBorder.LayoutTransform as ScaleTransform;
 			if (originalScale == null)
@@ -223,6 +236,33 @@ namespace AutoUpdater
 			}
 		}
 
+		public static void InstallLatest(string applicationName)
+		{
+			PublishDetails onlineAppDetails = new PublishDetails();
+			string errIfFail;
+			bool populatesuccess = WebInterop.PopulateObjectFromOnline(
+				PublishDetails.OnlineJsonCategory,
+				applicationName + PublishDetails.LastestVersionJsonNamePostfix,
+				onlineAppDetails,
+				out errIfFail,
+				TimeSpan.FromSeconds(10));
+
+			tmpform = new MainWindow(null, null, onlineAppDetails);
+			//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
+			//MainWindow thisform = frm as MainWindow;
+			try
+			{
+				//tmpform.Dispatcher
+				//    .Invoke((Action)delegate
+				//    {
+				tmpform.Show();// Dialog();
+				//});
+			}
+			catch
+			{
+			}
+		}
+
 		WebClient client;
 		//DateTime startTime;
 		string localFileTempPath;
@@ -269,13 +309,13 @@ namespace AutoUpdater
 
 					int indexOfQuestionMark = newerversionDetails.FtpUrl.IndexOf('?');
 					var parsed = HttpUtility.ParseQueryString(newerversionDetails.FtpUrl.Substring(indexOfQuestionMark + 1));
-					var relativePath = parsed.GetValues("relativepath");
-					if (relativePath == null || relativePath.Length == 0)
+					var relativePaths = parsed.GetValues("relativepath");
+					if (relativePaths == null || relativePaths.Length == 0)
 					{
 						UserMessages.ShowWarningMessage("Cannot obtain relative path from download URL, unable to find relativepath value in url:" + newerversionDetails.FtpUrl);
 						return;
 					}
-					else if (relativePath.Length > 1)
+					else if (relativePaths.Length > 1)
 					{
 						UserMessages.ShowWarningMessage("Cannot obtain relative path, multiple relative path values found in url: " + newerversionDetails.FtpUrl);
 						return;
@@ -283,7 +323,7 @@ namespace AutoUpdater
 
 					string err;
 					bool? downloadResult = PhpDownloadingInterop.PhpDownloadFile(
-						relativePath[0],//We already checked for multiple items above
+						relativePaths[0],//We already checked for multiple items above
 						localFileTempPath,
 						null,//Download complete file at this stage
 						out err,
