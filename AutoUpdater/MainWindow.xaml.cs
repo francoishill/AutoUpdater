@@ -582,30 +582,30 @@ namespace AutoUpdater
 		}
 	}
 
-	public class PublishDetails
-	{
-		public const string OnlineJsonCategory = "Own Applications";
-		public const string LastestVersionJsonNamePostfix = " - latest";
+	//public class PublishDetails
+	//{
+	//    public const string OnlineJsonCategory = "Own Applications";
+	//    public const string LastestVersionJsonNamePostfix = " - latest";
 
-		public string ApplicationName;
-		public string ApplicationVersion;
-		public long SetupSize;
-		public string MD5Hash;
-		public DateTime PublishedDate;
-		public string FtpUrl;
-		//TODO: May want to add TracUrl here
-		public PublishDetails() { }
-		public PublishDetails(string ApplicationName, string ApplicationVersion, long SetupSize, string MD5Hash, DateTime PublishedDate, string FtpUrl)
-		{
-			this.ApplicationName = ApplicationName;
-			this.ApplicationVersion = ApplicationVersion;
-			this.SetupSize = SetupSize;
-			this.MD5Hash = MD5Hash;
-			this.PublishedDate = PublishedDate;
-			this.FtpUrl = FtpUrl;
-		}
-		public string GetJsonString() { return WebInterop.GetJsonStringFromObject(this, true); }
-	}
+	//    public string ApplicationName;
+	//    public string ApplicationVersion;
+	//    public long SetupSize;
+	//    public string MD5Hash;
+	//    public DateTime PublishedDate;
+	//    public string FtpUrl;
+	//    //TODO: May want to add TracUrl here
+	//    public PublishDetails() { }
+	//    public PublishDetails(string ApplicationName, string ApplicationVersion, long SetupSize, string MD5Hash, DateTime PublishedDate, string FtpUrl)
+	//    {
+	//        this.ApplicationName = ApplicationName;
+	//        this.ApplicationVersion = ApplicationVersion;
+	//        this.SetupSize = SetupSize;
+	//        this.MD5Hash = MD5Hash;
+	//        this.PublishedDate = PublishedDate;
+	//        this.FtpUrl = FtpUrl;
+	//    }
+	//    public string GetJsonString() { return WebInterop.GetJsonStringFromObject(this, true); }
+	//}
 
 	public static class ExtensionMethods
 	{

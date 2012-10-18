@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 using System.IO;
+using SharedClasses;
 
 namespace AutoUpdater
 {
@@ -50,6 +51,29 @@ namespace AutoUpdater
 				else
 					AutoUpdater.MainWindow.CheckForUpdates(exePathToCheckForUpdates);
 			}
+			else if (args[1] == "checkforupdatesilently")
+			{
+				string applicationName = args[2];
+				string installedVersion = args[3];
+				string errorIfNull;
+				PublishDetails onlineVersionDetails;
+				bool? checkSuccess =
+					AutoUpdater.MainWindow.IsApplicationUpToDate(applicationName, installedVersion, out errorIfNull, out onlineVersionDetails);
+				AutoUpdating.ExitCodes exitCode = AutoUpdating.ExitCodes.UpToDateExitCode;
+				if (!checkSuccess.HasValue)
+				{
+					exitCode = AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
+					Console.Error.Write(errorIfNull);
+				}
+				else if (checkSuccess.Value == false)
+				{
+					exitCode = AutoUpdating.ExitCodes.NewVersionAvailableExitCode;
+					JSON.SetDefaultJsonInstanceSettings();
+					string jsonStr = JSON.Instance.ToJSON(onlineVersionDetails, false);
+					Console.Out.Write(jsonStr);
+				}
+				ShutDownThisApplication((int)exitCode);
+			}
 			else if (args[1] == "installlatest")
 			{
 				string applicationName = args[2];
@@ -59,7 +83,8 @@ namespace AutoUpdater
 				UserMessages.ShowWarningMessage("AutoUpdater does not recognize command (from arguments): " + args[1]);
 
 			if (mustExit)
-				Application.Current.Shutdown((int)SharedClasses.AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode);
+				//Application.Current.Shutdown((int)SharedClasses.AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode);
+				ShutDownThisApplication((int)SharedClasses.AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode);
 
 			//base.OnStartup(e);
 		}

@@ -10,6 +10,6 @@
     <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartArguments>checkforupdates "C:\Program Files (x86)\Mini Popup Tasks\MiniPopupTasks.exe"</StartArguments>
+    <StartArguments>checkforupdatesilently "AddDependenciesCSharp" "1.0.0.7"</StartArguments>
   </PropertyGroup>
 </Project>
