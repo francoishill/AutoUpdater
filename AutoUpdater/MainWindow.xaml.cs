@@ -84,9 +84,64 @@ namespace AutoUpdater
 			return Math.Round((double)bytes / (double)1024, decimals);
 		}
 
+		private enum VersionComparison { OnlineNewer, InstalledNewer, SameVersion, FailedToCheck };
+		private static VersionComparison IsOnlineVersionNewer(string installedVersion, string onlineVersion, out string errorIfNullBecauseCannotCompare)
+		{
+			string versionsConcatenated = string.Format("InstalledVersion = {0}, OnlineVersion = {1}", installedVersion ?? "", onlineVersion ?? "");
+			if (string.IsNullOrWhiteSpace(installedVersion) || string.IsNullOrWhiteSpace(onlineVersion))
+			{
+				errorIfNullBecauseCannotCompare = "InstalledVersion AND/OR OnlineVersion is empty: " + versionsConcatenated;
+				return VersionComparison.FailedToCheck;
+			}
+
+			string[] installedSplitted = installedVersion.Split('.');
+			string[] onlineSplitted = onlineVersion.Split('.');
+			if (installedSplitted.Length != onlineSplitted.Length)
+			{
+				errorIfNullBecauseCannotCompare = "InstalledVersion and OnlineVersion not in same format: " + versionsConcatenated;
+				return VersionComparison.FailedToCheck;
+			}
+
+			int tmpint;
+			bool fail = false;
+			installedSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
+			onlineSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
+			if (fail)
+			{
+				errorIfNullBecauseCannotCompare = "InstalledVersion and OnlineVersion must have integers between dots: " + versionsConcatenated;
+				return VersionComparison.FailedToCheck;
+			}
+
+			//if (installedAppVersion.Equals(onlineVersion, StringComparison.InvariantCultureIgnoreCase))
+			//    return VersionComparison.UpToDate;
+
+			for (int i = 0; i < installedSplitted.Length; i++)
+			{
+				int tmpInstalledInt;
+				int tmpOnlineInt;
+				tmpInstalledInt = int.Parse(installedSplitted[i]);
+				tmpOnlineInt = int.Parse(onlineSplitted[i]);
+
+				if (tmpInstalledInt == tmpOnlineInt)
+					continue;
+				if (tmpInstalledInt > tmpOnlineInt)
+				{
+					errorIfNullBecauseCannotCompare = null;
+					return VersionComparison.InstalledNewer;
+				}
+				else
+				{
+					errorIfNullBecauseCannotCompare = null;
+					return VersionComparison.OnlineNewer;
+				}
+			}
+			errorIfNullBecauseCannotCompare = null;
+			return VersionComparison.SameVersion;
+		}
+
 		public static bool? IsApplicationUpToDate(string ApplicationName, string installedVersion, out string errorIfNull, out PublishDetails detailsIfNewer)
 		{
-			detailsIfNewer = null;//Only details if newer version available
+			//detailsIfNewer = null;//Only details if newer version available
 			PublishDetails onlineAppDetails = new PublishDetails();
 			string errIfFail;
 			bool populatesuccess = WebInterop.PopulateObjectFromOnline(
@@ -99,56 +154,87 @@ namespace AutoUpdater
 			{
 				//return CompareVersions(installedVersion, onlineAppDetails.ApplicationVersion);
 				string onlineVersion = onlineAppDetails.ApplicationVersion;
+
 				string versionsConcatenated = string.Format("InstalledVersion = {0}, OnlineVersion = {1}", installedVersion ?? "", onlineVersion ?? "");
-				if (string.IsNullOrWhiteSpace(installedVersion) || string.IsNullOrWhiteSpace(onlineVersion))
-				{
-					errorIfNull = "InstalledVersion AND/OR OnlineVersion is empty: " + versionsConcatenated;
-					return null;
-				}
-				string[] installedSplitted = installedVersion.Split('.');
-				string[] onlineSplitted = onlineVersion.Split('.');
-				if (installedSplitted.Length != onlineSplitted.Length)
-				{
-					errorIfNull = "InstalledVersion and OnlineVersion not in same format: " + versionsConcatenated;
-					return null;
-				}
 
-				int tmpint;
-				bool fail = false;
-				installedSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
-				onlineSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
-				if (fail)
+				string errIfCannotCompare;
+				var versionsComparison = IsOnlineVersionNewer(installedVersion, onlineVersion, out errIfCannotCompare);
+				switch (versionsComparison)
 				{
-					errorIfNull = "InstalledVersion and OnlineVersion must have integers between dots: " + versionsConcatenated;
-					return null;
-				}
-
-				//if (installedAppVersion.Equals(onlineVersion, StringComparison.InvariantCultureIgnoreCase))
-				//    return VersionComparison.UpToDate;
-
-				for (int i = 0; i < installedSplitted.Length; i++)
-				{
-					int tmpInstalledInt;
-					int tmpOnlineInt;
-					tmpInstalledInt = int.Parse(installedSplitted[i]);
-					tmpOnlineInt = int.Parse(onlineSplitted[i]);
-
-					if (tmpInstalledInt == tmpOnlineInt)
-						continue;
-					if (tmpInstalledInt > tmpOnlineInt)
-					{
-						errorIfNull = "InstalledVersion is newer than OnlineVersion: " + versionsConcatenated;
-						return null;
-					}
-					else
-					{
-						errorIfNull = null;
+					case VersionComparison.OnlineNewer:
 						detailsIfNewer = onlineAppDetails;
+						errorIfNull = null;
 						return false;
-					}
+					case VersionComparison.InstalledNewer:
+						detailsIfNewer = onlineAppDetails;
+						errorIfNull =  "InstalledVersion is newer than OnlineVersion: " + versionsConcatenated;;
+						return null;
+					case VersionComparison.SameVersion:
+						detailsIfNewer = null;
+						errorIfNull = null;
+						return true;
+					case VersionComparison.FailedToCheck:
+						detailsIfNewer = null;
+						errorIfNull = errIfCannotCompare;
+						return null;
+					default:
+						//This should never occur, unless the enum has an extra item
+						detailsIfNewer = null;
+						errorIfNull = "Error text not implemented for this enum value of VersionComparison = " + versionsComparison;
+						return null;
 				}
-				errorIfNull = null;
-				return true;
+
+				//string versionsConcatenated = string.Format("InstalledVersion = {0}, OnlineVersion = {1}", installedVersion ?? "", onlineVersion ?? "");
+				//if (string.IsNullOrWhiteSpace(installedVersion) || string.IsNullOrWhiteSpace(onlineVersion))
+				//{
+				//    errorIfNull = "InstalledVersion AND/OR OnlineVersion is empty: " + versionsConcatenated;
+				//    return null;
+				//}
+				//string[] installedSplitted = installedVersion.Split('.');
+				//string[] onlineSplitted = onlineVersion.Split('.');
+				//if (installedSplitted.Length != onlineSplitted.Length)
+				//{
+				//    errorIfNull = "InstalledVersion and OnlineVersion not in same format: " + versionsConcatenated;
+				//    return null;
+				//}
+
+				//int tmpint;
+				//bool fail = false;
+				//installedSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
+				//onlineSplitted.ToList().ForEach((s) => { if (!int.TryParse(s, out tmpint)) fail = true; });
+				//if (fail)
+				//{
+				//    errorIfNull = "InstalledVersion and OnlineVersion must have integers between dots: " + versionsConcatenated;
+				//    return null;
+				//}
+
+				////if (installedAppVersion.Equals(onlineVersion, StringComparison.InvariantCultureIgnoreCase))
+				////    return VersionComparison.UpToDate;
+
+				//for (int i = 0; i < installedSplitted.Length; i++)
+				//{
+				//    int tmpInstalledInt;
+				//    int tmpOnlineInt;
+				//    tmpInstalledInt = int.Parse(installedSplitted[i]);
+				//    tmpOnlineInt = int.Parse(onlineSplitted[i]);
+
+				//    if (tmpInstalledInt == tmpOnlineInt)
+				//        continue;
+				//    if (tmpInstalledInt > tmpOnlineInt)
+				//    {
+				//        detailsIfNewer = onlineAppDetails;
+				//        errorIfNull = "InstalledVersion is newer than OnlineVersion: " + versionsConcatenated;
+				//        return null;
+				//    }
+				//    else
+				//    {
+				//        errorIfNull = null;
+				//        detailsIfNewer = onlineAppDetails;
+				//        return false;
+				//    }
+				//}
+				//errorIfNull = null;
+				//return true;
 			}
 			else
 			{
@@ -156,6 +242,7 @@ namespace AutoUpdater
 					errorIfNull = "Update information not stored online yet for " + ApplicationName + ".";
 				else
 					errorIfNull = errIfFail;
+				detailsIfNewer = null;
 				return null;
 			}
 		}

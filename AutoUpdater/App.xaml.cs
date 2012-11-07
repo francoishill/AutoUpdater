@@ -62,7 +62,10 @@ namespace AutoUpdater
 				AutoUpdating.ExitCodes exitCode = AutoUpdating.ExitCodes.UpToDateExitCode;
 				if (!checkSuccess.HasValue)
 				{
-					exitCode = AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
+					if (onlineVersionDetails == null)//Unknown erro
+						exitCode = AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
+					else//We have online details so the installed version is newer than online
+						exitCode = AutoUpdating.ExitCodes.InstalledVersionNewerThanOnline;
 					Console.Error.Write(errorIfNull);
 				}
 				else if (checkSuccess.Value == false)
