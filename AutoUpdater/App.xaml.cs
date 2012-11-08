@@ -38,7 +38,7 @@ namespace AutoUpdater
 				UserMessages.ShowWarningMessage("Not enough command-line arguments, must be: command \"c:\\my\\path\\to\\exe\"");
 				mustExit = true;
 			}
-			else if (args[1] == "checkforupdates")
+			else if (args[1].Equals("checkforupdates", StringComparison.InvariantCultureIgnoreCase))
 			{
 				string exePathToCheckForUpdates = args[2];
 				if (exePathToCheckForUpdates.EndsWith(".vshost.exe", StringComparison.InvariantCultureIgnoreCase))
@@ -51,7 +51,7 @@ namespace AutoUpdater
 				else
 					AutoUpdater.MainWindow.CheckForUpdates(exePathToCheckForUpdates);
 			}
-			else if (args[1] == "checkforupdatesilently")
+			else if (args[1].Equals("checkforupdatesilently", StringComparison.InvariantCultureIgnoreCase))
 			{
 				string applicationName = args[2];
 				string installedVersion = args[3];
@@ -77,10 +77,12 @@ namespace AutoUpdater
 				}
 				ShutDownThisApplication((int)exitCode);
 			}
-			else if (args[1] == "installlatest")
+			else if (args[1].Equals("installlatest", StringComparison.InvariantCultureIgnoreCase)
+				|| args[1].Equals("installlatestsilently", StringComparison.InvariantCultureIgnoreCase))
 			{
+				bool installSilently = args[1] == "installlatestsilently";
 				string applicationName = args[2];
-				AutoUpdater.MainWindow.InstallLatest(applicationName);
+				AutoUpdater.MainWindow.InstallLatest(applicationName, installSilently);
 			}
 			else
 				UserMessages.ShowWarningMessage("AutoUpdater does not recognize command (from arguments): " + args[1]);

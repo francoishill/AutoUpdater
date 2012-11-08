@@ -31,15 +31,18 @@ namespace AutoUpdater
 		private const string ftpPassword = "ownappsverylongpassword";
 		ScaleTransform originalScale;
 		ScaleTransform smallScale = new ScaleTransform(0.1, 0.1);
+		private bool mustInstallSilently = false;
 
 		public MainWindow()
 		{
 			InitializeComponent();
 		}
 
-		public MainWindow(string currentVersion, DateTime? currentInstalledDate, PublishDetails newerversionDetails)
+		public MainWindow(string currentVersion, DateTime? currentInstalledDate, PublishDetails newerversionDetails, bool installSilently)
 		{
 			InitializeComponent();
+
+			mustInstallSilently = installSilently;
 
 			System.Windows.Forms.Application.EnableVisualStyles();
 			this.newerversionDetails = newerversionDetails;
@@ -167,7 +170,7 @@ namespace AutoUpdater
 						return false;
 					case VersionComparison.InstalledNewer:
 						detailsIfNewer = onlineAppDetails;
-						errorIfNull =  "InstalledVersion is newer than OnlineVersion: " + versionsConcatenated;;
+						errorIfNull = "InstalledVersion is newer than OnlineVersion: " + versionsConcatenated; ;
 						return null;
 					case VersionComparison.SameVersion:
 						detailsIfNewer = null;
@@ -290,7 +293,7 @@ namespace AutoUpdater
 					{
 						Application.Current.Dispatcher.Invoke((Action)delegate
 						{
-							tmpform = new MainWindow(InstalledVersion, File.GetCreationTime(applicationExePath), detailsIfNewer);
+							tmpform = new MainWindow(InstalledVersion, File.GetCreationTime(applicationExePath), detailsIfNewer, false);
 							tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
 							//MainWindow thisform = frm as MainWindow;
 							try
@@ -323,7 +326,7 @@ namespace AutoUpdater
 			}
 		}
 
-		public static void InstallLatest(string applicationName)
+		public static void InstallLatest(string applicationName, bool installSilently)
 		{
 			PublishDetails onlineAppDetails = new PublishDetails();
 			string errIfFail;
@@ -334,7 +337,7 @@ namespace AutoUpdater
 				out errIfFail,
 				TimeSpan.FromSeconds(10));
 
-			tmpform = new MainWindow(null, null, onlineAppDetails);
+			tmpform = new MainWindow(null, null, onlineAppDetails, installSilently);
 			//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
 			//MainWindow thisform = frm as MainWindow;
 			try
@@ -343,6 +346,8 @@ namespace AutoUpdater
 				//    .Invoke((Action)delegate
 				//    {
 				tmpform.Show();// Dialog();
+				if (installSilently)//We will not show the form, was only created now
+					tmpform.DownloadNow();
 				//});
 			}
 			catch
@@ -436,7 +441,8 @@ namespace AutoUpdater
 							return;
 						}
 					}
-					else if (UserMessages.Confirm("The download is complete, do you want to close this application and install new version?"))
+					else if (mustInstallSilently
+						|| UserMessages.Confirm("The download is complete, do you want to close this application and install new version?"))
 					{
 						CallFromSeparateThread(delegate
 						{
@@ -446,12 +452,33 @@ namespace AutoUpdater
 							clickHereToDownloadButton.Visibility = System.Windows.Visibility.Collapsed;
 							progressBar1.Visibility = System.Windows.Visibility.Collapsed;
 							labelStatus.Visibility = System.Windows.Visibility.Collapsed;
-							Process.Start(localFileTempPath);
-							this.Close();
+							if (mustInstallSilently)
+							{
+								bool allOpenProcsKilled = ProcessesInterop.KillProcess(
+									newerversionDetails.ApplicationName,
+									delegate { });//Dont need to do anything with the actionOnMessage)
+
+								if (allOpenProcsKilled)
+								{
+									var proc = Process.Start(localFileTempPath, "/S");
+									proc.WaitForExit();
+									Process.Start(PublishInterop.GetApplicationExePathFromApplicationName(newerversionDetails.ApplicationName));
+								}
+								else//Just start the setup in non-silent mode if some processes with the same name are still open
+									Process.Start(localFileTempPath);
+								this.Close();
+							}
+							else
+							{
+								Process.Start(localFileTempPath);
+								this.Close();
+							}
 						});
 					}
 					else
+					{
 						Process.Start("explorer", "/select,\"" + localFileTempPath + "\"");
+					}
 				}
 				finally
 				{
