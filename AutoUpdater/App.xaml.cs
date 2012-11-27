@@ -17,7 +17,8 @@ namespace AutoUpdater
 		private bool WasAlreadyCalledByIttself()
 		{
 			var args = Environment.GetCommandLineArgs();
-			return args.Length >= 4 && args[3].Equals(SharedClasses.AutoUpdating.cCalledItsselfThirdParameter, StringComparison.InvariantCultureIgnoreCase);
+			//return args.Length >= 4 && args[3].Equals(SharedClasses.AutoUpdating.cCalledItsselfThirdParameter, StringComparison.InvariantCultureIgnoreCase);
+			return args.Contains(SharedClasses.AutoUpdating.cCalledItsselfThirdParameter, StringComparer.InvariantCultureIgnoreCase);
 		}
 
 		protected override void OnStartup(StartupEventArgs e)
@@ -25,7 +26,7 @@ namespace AutoUpdater
 			//TODO: Do not use SingleInstance otherwise how will other application know if exit code is sent?
 			//TODO: Maybe look at placing the WpfNotificationWindow in its own app
 
-			if (!WasAlreadyCalledByIttself())//Check first if alread called otherwise endless loop
+			if (!WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
 				SharedClasses.AutoUpdating.CheckForUpdates(null, null);
 
 			bool mustExit = false;
@@ -54,6 +55,8 @@ namespace AutoUpdater
 			else if (args[1].Equals("checkforupdatesilently", StringComparison.InvariantCultureIgnoreCase))
 			{
 				string applicationName = args[2];
+				if (File.Exists(applicationName))
+					applicationName = Path.GetFileNameWithoutExtension(applicationName);
 				string installedVersion = args[3];
 				string errorIfNull;
 				PublishDetails onlineVersionDetails;
@@ -82,6 +85,8 @@ namespace AutoUpdater
 			{
 				bool installSilently = args[1] == "installlatestsilently";
 				string applicationName = args[2];
+				if (File.Exists(applicationName))
+					applicationName = Path.GetFileNameWithoutExtension(applicationName);
 				AutoUpdater.MainWindow.InstallLatest(applicationName, installSilently);
 			}
 			else

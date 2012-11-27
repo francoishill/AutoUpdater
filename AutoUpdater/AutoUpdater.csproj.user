@@ -10,6 +10,6 @@
     <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartArguments>installlatestsilently "StickyNotes"</StartArguments>
+    <StartArguments>checkforupdatesilently "C:\Program Files (x86)\Build Test System\BuildTestSystem.exe" 1.0.0.47</StartArguments>
   </PropertyGroup>
 </Project>
