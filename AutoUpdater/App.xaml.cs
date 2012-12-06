@@ -48,7 +48,8 @@ namespace AutoUpdater
 			//args = new string[] { "", "checkforupdates", @"c:\windows\notepad.exe" };
 			if (args.Length < 3)
 			{
-				UserMessages.ShowWarningMessage("Not enough command-line arguments, must be: command \"c:\\my\\path\\to\\exe\"");
+				//UserMessages.ShowWarningMessage("Not enough command-line arguments, must be: command \"c:\\my\\path\\to\\exe\"");
+				//Do not show message again, autoupdater will from now on Startup with windows, 2012-12-07 01:38
 				mustExit = true;
 			}
 			else if (args[1].Equals("checkforupdates", StringComparison.InvariantCultureIgnoreCase))
