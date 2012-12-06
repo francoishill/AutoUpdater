@@ -95,6 +95,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\..\SharedClasses\ConvertersGeneral.cs">
+      <Link>ConvertersGeneral.cs</Link>
+    </Compile>
+    <Compile Include="UpdatingApplicationsWindow.xaml.cs">
+      <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
+    </Compile>
     <Page Include="..\..\SharedClasses\AboutWindow2.xaml">
       <Link>AboutWindow2.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -155,6 +161,9 @@
     </Compile>
     <Compile Include="..\..\SharedClasses\Generics.cs">
       <Link>Generics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\Helpers.cs">
+      <Link>Helpers.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\IconsInterop.cs">
       <Link>IconsInterop.cs</Link>
@@ -234,6 +243,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="UpdatingApplicationsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

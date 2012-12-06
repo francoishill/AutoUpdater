@@ -18,6 +18,10 @@ using System.Windows.Threading;
 using System.Net;
 using System.ComponentModel;
 using System.Web;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+using System.Globalization;
+using System.Collections.Concurrent;
 
 namespace AutoUpdater
 {
@@ -337,21 +341,139 @@ namespace AutoUpdater
 				out errIfFail,
 				TimeSpan.FromSeconds(10));
 
-			tmpform = new MainWindow(null, null, onlineAppDetails, installSilently);
-			//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
-			//MainWindow thisform = frm as MainWindow;
+			Application.Current.Dispatcher.Invoke((Action)delegate
+			{
+				tmpform = new MainWindow(null, null, onlineAppDetails, installSilently);
+				//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
+				//MainWindow thisform = frm as MainWindow;
+				try
+				{
+					//tmpform.Dispatcher
+					//    .Invoke((Action)delegate
+					//    {
+					if (installSilently)
+					{
+						tmpform.Show();// Dialog();
+						if (installSilently)//We will not show the form, was only created now
+							tmpform.DownloadNow();
+					}
+					else
+						tmpform.ShowDialog();
+					//});
+				}
+				catch
+				{
+				}
+			});
+		}
+
+		private const string cDateFormatForLastTimeCheckAllForUpdates = "yyyy_MM_dd__HH_mm_ss";
+		private static string GetFilePathToStoreLastTimeCheckedAllForUpdates()
+		{
+			return SettingsInterop.GetFullFilePathInLocalAppdata("LastTimeCheckAllForUpdates.fjset", "AutoUpdater");
+		}
+		private static DateTime GetLastTimeCheckedAllForUpdates()
+		{
+			string filepath = GetFilePathToStoreLastTimeCheckedAllForUpdates();
+			DateTime tmpParsedDate;
+			if (!File.Exists(filepath)
+				|| !DateTime.TryParseExact(File.ReadAllText(filepath).Trim(), cDateFormatForLastTimeCheckAllForUpdates, CultureInfo.InvariantCulture, DateTimeStyles.None, out tmpParsedDate))
+				return DateTime.MinValue;
+			return tmpParsedDate;
+		}
+		private static void SetLastTimeCheckedAllForUpdates(DateTime time, Action<string> onError)
+		{
 			try
 			{
-				//tmpform.Dispatcher
-				//    .Invoke((Action)delegate
-				//    {
-				tmpform.Show();// Dialog();
-				if (installSilently)//We will not show the form, was only created now
-					tmpform.DownloadNow();
-				//});
+				File.WriteAllText(GetFilePathToStoreLastTimeCheckedAllForUpdates(), time.ToString(cDateFormatForLastTimeCheckAllForUpdates));
 			}
-			catch
+			catch (Exception exc)
 			{
+				onError(exc.Message);
+			}
+		}
+
+		private static Dictionary<string, string> GetListOfInstalledApplications()
+		{
+			Dictionary<string, string> tmpdict = new Dictionary<string, string>();
+			using (var uninstallRootKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryInterop.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32)
+				.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
+			{
+				if (null == uninstallRootKey)
+					return null;
+				var appKeys = uninstallRootKey.GetSubKeyNames().ToArray();
+				foreach (string appkeyname in appKeys)
+				{
+					try
+					{
+						using (RegistryKey appkey = uninstallRootKey.OpenSubKey(appkeyname))
+						{
+							object urlInfoValue = appkey.GetValue("URLInfoAbout");
+							if (urlInfoValue == null)
+								continue;//The value must exist for URLInfoAbout
+							if (!urlInfoValue.ToString().StartsWith(SettingsSimple.HomePcUrls.Instance.AppsPublishingRoot, StringComparison.InvariantCultureIgnoreCase))
+								continue;//The URLInfoAbout value must start with our AppsPublishingRoot
+							//If we reached this point in the foreach loop, this application is one of our own, now make sure the EXE also exists
+							object displayIcon = appkey.GetValue("DisplayIcon");
+							//TODO: For now we use the DisplayIcon, is this the best way, what if DisplayIcon is different from EXE
+							if (displayIcon == null)
+								continue;//We need the DisplayIcon value, it contains the full path of the EXE
+							if (!File.Exists(displayIcon.ToString()))
+								continue;//The application is probably not installed
+							//At this point we know the registry entry is our own application and it is actaully installed (file exists)
+							string exePath = displayIcon.ToString();
+							string appname = Path.GetFileNameWithoutExtension(exePath);
+							if (!tmpdict.ContainsKey(appname))
+								tmpdict.Add(appname, exePath);
+						}
+					}
+					catch { }
+				}
+			}
+			return tmpdict;
+		}
+		public static void CheckAndUpdateAllApplicationsToLatestVersion(Action<string> onError)
+		{
+			DateTime lastCheck = GetLastTimeCheckedAllForUpdates();
+			if (DateTime.Now.Subtract(lastCheck).TotalMinutes < 10)//Do no check more than every 10 minutes
+				return;
+			SetLastTimeCheckedAllForUpdates(DateTime.Now, onError);
+
+			if (onError == null) onError = delegate { };
+
+			ConcurrentDictionary<string, PublishDetails> appsToBeUpdated = new ConcurrentDictionary<string, PublishDetails>();
+
+			var installedApps = GetListOfInstalledApplications();
+			Parallel.ForEach<KeyValuePair<string, string>>(installedApps,
+				(appnameAndExepath) =>
+				{
+					string installedVersion = FileVersionInfo.GetVersionInfo(appnameAndExepath.Value).FileVersion;
+
+					string errIfNull;
+					PublishDetails pubdetails;
+					bool? result = IsApplicationUpToDate(
+						appnameAndExepath.Key,
+						installedVersion,
+						out errIfNull,
+						out pubdetails);
+					if (result == null)//Error occurred
+					{
+						ShowNoCallbackNotificationInterop.Notify(onError, string.Format("Could not check for application '{0}' updates: {1}", appnameAndExepath.Key, errIfNull), "Error", ShowNoCallbackNotificationInterop.NotificationTypes.Error);
+						return;
+					}
+					if (result == false)//We have updates available
+					{
+						//InstallLatest(appnameAndExepath.Key, false);
+						while (!appsToBeUpdated.TryAdd(appnameAndExepath.Key, pubdetails))
+							Thread.Sleep(100);
+					}
+				});
+
+			if (appsToBeUpdated.Count > 0)
+			{
+				//The applications (key=appname, value=exepath) for applications which require updates
+				var tmpwin = new UpdatingApplicationsWindow(appsToBeUpdated);
+				tmpwin.ShowDialog();
 			}
 		}
 

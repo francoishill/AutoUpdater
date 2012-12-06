@@ -26,8 +26,20 @@ namespace AutoUpdater
 			//TODO: Do not use SingleInstance otherwise how will other application know if exit code is sent?
 			//TODO: Maybe look at placing the WpfNotificationWindow in its own app
 
+			AppDomain.CurrentDomain.UnhandledException += (snder, exc) =>
+			{
+				Exception exception = (Exception)exc.ExceptionObject;
+				UserMessages.ShowErrorMessage("Exception" + (exc.IsTerminating ? ", application will now exit" : "") + ":"
+					+ exception.Message + Environment.NewLine + exception.StackTrace);
+			};
+
 			if (!WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
-				SharedClasses.AutoUpdating.CheckForUpdates(null, null);
+			{
+				AutoUpdating.CheckForUpdates(null, null);
+				//AutoUpdating.CheckAllForUpdates(err => UserMessages.ShowErrorMessage(err));
+				AutoUpdater.MainWindow
+					.CheckAndUpdateAllApplicationsToLatestVersion(err => UserMessages.ShowErrorMessage(err));
+			}
 
 			bool mustExit = false;
 
@@ -89,6 +101,11 @@ namespace AutoUpdater
 					applicationName = Path.GetFileNameWithoutExtension(applicationName);
 				AutoUpdater.MainWindow.InstallLatest(applicationName, installSilently);
 			}
+			/*else if (args[1].Equals("checkandupdateall", StringComparison.InvariantCultureIgnoreCase))
+			{
+				AutoUpdater.MainWindow
+					.CheckAndUpdateAllApplicationsToLatestVersion(err => UserMessages.ShowErrorMessage(err));
+			}*/
 			else
 				UserMessages.ShowWarningMessage("AutoUpdater does not recognize command (from arguments): " + args[1]);
 
