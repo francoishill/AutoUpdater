@@ -3,7 +3,7 @@
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:sharedclasses='clr-namespace:SharedClasses'
 		Title="UpdatingApplicationsWindow"
-		Height='480'
+		Height='736'
 		Width='513'
 		WindowStartupLocation='CenterScreen'
 		Loaded='Window_Loaded'>
@@ -12,12 +12,15 @@
 	</Window.Resources>
 	<Grid>
 		<ListBox Name='listboxApps'
+				 ScrollViewer.CanContentScroll='True'
+				 ScrollViewer.HorizontalScrollBarVisibility='Auto'
+				 ScrollViewer.VerticalScrollBarVisibility='Auto'
 				 SelectionChanged='listboxApps_SelectionChanged'>
 			<ListBox.ItemTemplate>
 				<DataTemplate>
 					<Border Margin='10'
-							Padding='5'
-							CornerRadius='10'>
+							CornerRadius='10'
+							Padding='15'>
 						<Border.Background>
 							<LinearGradientBrush StartPoint='0,0'
 												 EndPoint='0,1'>
@@ -42,7 +45,12 @@
 									   Text='{Binding StatusMessage}'
 									   HorizontalAlignment='Stretch' />
 							<StackPanel Orientation='Horizontal'>
-								<TextBlock Text='{Binding ApplicationName, StringFormat="Name=\{0\}"}'
+								<!--<TextBlock Text='{Binding ApplicationName, StringFormat="Name=\{0\}"}'-->
+								<Image Source='{Binding IconImage}'
+									   Width='16'
+									   VerticalAlignment='Center' />
+								<TextBlock Text='{Binding ApplicationName}'
+										   Margin='10 0 0 0'
 										   FontSize='20' />
 							</StackPanel>
 							<Button Content='Update'

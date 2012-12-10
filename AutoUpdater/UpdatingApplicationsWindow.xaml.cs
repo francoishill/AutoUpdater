@@ -54,31 +54,68 @@ namespace AutoUpdater
 			but.IsEnabled = false;
 			busyDownloadsWithButtons.Add(app, but);
 			successfullyInstalledUpdate.Add(app, false);
-			
-			but.Content = "Downloading...";
-			app.StatusMessage = "Downloading latest version, please be patient...";
+
+			if (app.DownloadedFilePathIfSucceeded == null)//Setup was not downloaded yet
+			{
+				but.Content = "Downloading...";
+				app.StatusMessage = "Downloading latest version, please be patient...";
+			}
+			else
+			{
+				but.Content = "Installing...";
+				app.StatusMessage = "Waiting for installation to complete...";
+			}
 
 			ThreadingInterop.PerformOneArgFunctionSeperateThread<ApplicationBeingUpdated>(
 			(apptodownload) =>
 			{
 				Button tmpbut = busyDownloadsWithButtons[apptodownload];
-				bool updateSuccess = apptodownload.DownloadLatestVersionAndInstall(
-					(appAfterDownloadBeforeInstalling) =>
+
+				if (apptodownload.DownloadedFilePathIfSucceeded == null)//Setup was not downloaded yet
+				{
+					string errIfFailed;
+					bool downloadSuccess = apptodownload.DownloadLatestVersion(out errIfFailed);
+					if (!downloadSuccess)
 					{
-						Button tmpbut2 = busyDownloadsWithButtons[appAfterDownloadBeforeInstalling];
-						tmpbut2.Dispatcher.Invoke((Action)delegate
+						tmpbut.Dispatcher.Invoke((Action)delegate
 						{
-							tmpbut2.Content = "Installing...";
-							appAfterDownloadBeforeInstalling.StatusMessage = "Installing downloaded setup, please wait...";
-						});
-					});
-				if (!updateSuccess)//If we failed to update, enable the button again
-					tmpbut.Dispatcher.Invoke(
-						(Action)delegate
-						{
+							tmpbut.Content = "Failed download, retry?";
 							tmpbut.IsEnabled = true;
+							apptodownload.StatusMessage = "Failed reason: " + errIfFailed;
 						});
+					}
+					else
+					{
+						tmpbut.Dispatcher.Invoke((Action)delegate
+						{
+							tmpbut.Content = "Install";
+							tmpbut.IsEnabled = true;
+							apptodownload.StatusMessage = "Update downloaded, click button to install it.";
+						});
+					}
+				}
 				else
+				{
+					bool installSuccess = apptodownload.InstallLocallyDownloadedSetup();
+					if (!installSuccess)
+					{
+						tmpbut.Dispatcher.Invoke((Action)delegate
+						{
+							tmpbut.Content = "Install";
+							tmpbut.IsEnabled = true;
+							apptodownload.StatusMessage = "Setup did not successfully update the application.";
+						});
+					}
+					else
+					{
+						tmpbut.Dispatcher.Invoke((Action)delegate
+						{
+							tmpbut.Content = "Up to date";
+							apptodownload.StatusMessage = "Application successfully updated.";
+						});
+					}
+				}
+				/*else
 				{
 					tmpbut.Dispatcher.Invoke(
 						(Action)delegate
@@ -96,6 +133,15 @@ namespace AutoUpdater
 							}
 						});
 				}
+				else {
+					tmpbut.Dispatcher.Invoke(
+						(Action)delegate
+						{
+							tmpbut.Content = "Update";
+								tmpbut.IsEnabled = true;
+								apptodownload.StatusMessage = "Setup did not successfully update the application.";
+						});
+				}*/
 				busyDownloadsWithButtons.Remove(apptodownload);
 				successfullyInstalledUpdate.Remove(apptodownload);
 			},
@@ -113,29 +159,40 @@ namespace AutoUpdater
 	{
 		public string ApplicationName { get; private set; }
 		private PublishDetails NewerversionDetails;
-		public bool HasBeenUpdated;
+		public string DownloadedFilePathIfSucceeded { get; private set; }
+		public bool HasBeenUpdated { get; private set; }
 
 		private int _progresspercentage;
 		public int ProgressPercentage { get { return _progresspercentage; } set { _progresspercentage = value; OnPropertyChanged("ProgressPercentage", "ProgressVisible"); } }
 		public bool ProgressVisible { get { return this.ProgressPercentage != 0 && this.ProgressPercentage != 100; } }
 		private string _statusmessage;
 		public string StatusMessage { get { return _statusmessage; } set { _statusmessage = value; OnPropertyChanged("StatusMessage"); } }
+		private ImageSource _iconimage;
+		public ImageSource IconImage { get { return _iconimage; } set { _iconimage = value; OnPropertyChanged("IconImage"); } }
 
 		public ApplicationBeingUpdated(string ApplicationName, PublishDetails NewerversionDetails)
 		{
 			this.ApplicationName = ApplicationName;
 			this.NewerversionDetails = NewerversionDetails;
 			this.HasBeenUpdated = false;
+			this.IconImage = IconsInterop.IconExtractor.Extract(GetExePath()).IconToImageSource();
+			string TODO_maySaveDownloadedFileLocation;
+			//Maybe save the location when AutoUpdater exist, so we can just install the downloads next time, save it with a version and MD5hash too
 		}
 
-		public bool DownloadLatestVersionAndInstall(Action<ApplicationBeingUpdated> onDownloadCompleteBeforeRunningSetup)
+		private string GetExePath()
 		{
-			if (onDownloadCompleteBeforeRunningSetup == null) onDownloadCompleteBeforeRunningSetup = delegate { };
+			return PublishInterop.GetApplicationExePathFromApplicationName(ApplicationName);
+		}
+
+		public bool DownloadLatestVersion(out string errIfFailed)//Action<ApplicationBeingUpdated> onDownloadCompleteBeforeRunningSetup)
+		{
+			//if (onDownloadCompleteBeforeRunningSetup == null) onDownloadCompleteBeforeRunningSetup = delegate { };
 
 			string localFileTempPath = Path.GetTempPath().TrimEnd('\\') + "\\Setup_Newest_" + NewerversionDetails.ApplicationName + ".exe";
 			if (!NewerversionDetails.FtpUrl.Contains('?'))
 			{
-				UserMessages.ShowWarningMessage("Cannot obtain relative path from download URL, no ? found in url: " + NewerversionDetails.FtpUrl);
+				errIfFailed = "Cannot obtain relative path from download URL, no ? found in url: " + NewerversionDetails.FtpUrl;
 				return false;
 			}
 			int indexOfQuestionMark = NewerversionDetails.FtpUrl.IndexOf('?');
@@ -143,12 +200,12 @@ namespace AutoUpdater
 			var relativePaths = parsed.GetValues("relativepath");
 			if (relativePaths == null || relativePaths.Length == 0)
 			{
-				UserMessages.ShowWarningMessage("Cannot obtain relative path from download URL, unable to find relativepath value in url:" + NewerversionDetails.FtpUrl);
+				errIfFailed = "Cannot obtain relative path from download URL, unable to find relativepath value in url:" + NewerversionDetails.FtpUrl;
 				return false;
 			}
 			else if (relativePaths.Length > 1)
 			{
-				UserMessages.ShowWarningMessage("Cannot obtain relative path, multiple relative path values found in url: " + NewerversionDetails.FtpUrl);
+				errIfFailed = "Cannot obtain relative path, multiple relative path values found in url: " + NewerversionDetails.FtpUrl;
 				return false;
 			}
 
@@ -167,21 +224,32 @@ namespace AutoUpdater
 
 			if (downloadResult != true)//Error occurred, client or server side
 			{
-				if (UserMessages.Confirm("The downloaded was unsuccessful due to the following error, download it again?"
+				errIfFailed = err;
+				return false;
+				/*if (UserMessages.Confirm("The downloaded was unsuccessful due to the following error, download it again?"
 					+ Environment.NewLine + Environment.NewLine + err))
 				{
-					return DownloadLatestVersionAndInstall(onDownloadCompleteBeforeRunningSetup);
-				}
+					return DownloadLatestVersion();//onDownloadCompleteBeforeRunningSetup);
+				}*/
 			}
 
-			onDownloadCompleteBeforeRunningSetup(this);
-			//Can latest install automatically, look at the DownloadNow method, at the "else if (mustInstallSilently" section in MainWindow.xaml.cs of AutoUpdatr
-			Process.Start(localFileTempPath).WaitForExit();
-			//Check if the setup actually completed and the local version is now up to date
-			string localVersion = FileVersionInfo.GetVersionInfo(PublishInterop.GetApplicationExePathFromApplicationName(ApplicationName)).FileVersion;
-			if (localVersion == NewerversionDetails.ApplicationVersion)
-				HasBeenUpdated = true;
+			this.DownloadedFilePathIfSucceeded = localFileTempPath;
+			//Do not install in the method, rather in separate install method
+			/*onDownloadCompleteBeforeRunningSetup(this);
+			 InstallLocallyDownloadedSetup()
+			 */
+			errIfFailed = null;
 			return true;
+		}
+
+		public bool InstallLocallyDownloadedSetup()
+		{
+			//Can latest install automatically, look at the DownloadNow method, at the "else if (mustInstallSilently" section in MainWindow.xaml.cs of AutoUpdatr
+			Process.Start(this.DownloadedFilePathIfSucceeded).WaitForExit();
+			//Check if the setup actually completed and the local version is now up to date
+			string localVersion = FileVersionInfo.GetVersionInfo(GetExePath()).FileVersion;
+			this.HasBeenUpdated = localVersion == NewerversionDetails.ApplicationVersion;
+			return this.HasBeenUpdated;
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged = delegate { };
