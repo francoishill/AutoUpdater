@@ -98,6 +98,15 @@
     <Compile Include="..\..\SharedClasses\ConvertersGeneral.cs">
       <Link>ConvertersGeneral.cs</Link>
     </Compile>
+    <Compile Include="..\..\SharedClasses\EncryptionInterop.cs">
+      <Link>EncryptionInterop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\LicensingInterop_Shared.cs">
+      <Link>LicensingInterop_Shared.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\PhpInterop.cs">
+      <Link>PhpInterop.cs</Link>
+    </Compile>
     <Compile Include="UpdatingApplicationsWindow.xaml.cs">
       <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
     </Compile>
