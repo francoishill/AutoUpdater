@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.IO;
 using SharedClasses;
+using System.Diagnostics;
 
 namespace AutoUpdater
 {
@@ -26,6 +27,8 @@ namespace AutoUpdater
 			//TODO: Do not use SingleInstance otherwise how will other application know if exit code is sent?
 			//TODO: Maybe look at placing the WpfNotificationWindow in its own app
 
+			int PID = Process.GetCurrentProcess().Id;
+			Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", running with commandline arguments: " + string.Join("|", Environment.GetCommandLineArgs()), Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
 			AppDomain.CurrentDomain.UnhandledException += (snder, exc) =>
 			{
 				Exception exception = (Exception)exc.ExceptionObject;
@@ -33,15 +36,16 @@ namespace AutoUpdater
 					+ exception.Message + Environment.NewLine + exception.StackTrace);
 			};
 
+			bool mustExit = false;
 			if (!WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
 			{
-				AutoUpdating.CheckForUpdates(null, null);
+				AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates(null, null);
 				//AutoUpdating.CheckAllForUpdates(err => UserMessages.ShowErrorMessage(err));
 				AutoUpdater.MainWindow
 					.CheckAndUpdateAllApplicationsToLatestVersion(err => UserMessages.ShowErrorMessage(err));
 			}
-
-			bool mustExit = false;
+			else
+				mustExit = true;
 
 			var args = Environment.GetCommandLineArgs();
 			//int remove;
@@ -56,14 +60,21 @@ namespace AutoUpdater
 			{
 				string exePathToCheckForUpdates = args[2];
 				if (exePathToCheckForUpdates.EndsWith(".vshost.exe", StringComparison.InvariantCultureIgnoreCase))
-					Environment.Exit((int)SharedClasses.AutoUpdating.ExitCodes.SkippingBecauseIsDebugEndingWithVshostExe);
+				{
+					mustExit = true;
+					App.CurrentExitCode = (int)SharedClasses.AutoUpdating.ExitCodes.SkippingBecauseIsDebugEndingWithVshostExe;
+					//Environment.Exit((int)SharedClasses.AutoUpdating.ExitCodes.SkippingBecauseIsDebugEndingWithVshostExe);
+				}
 				if (!File.Exists(exePathToCheckForUpdates))
 				{
 					UserMessages.ShowWarningMessage("Cannot find passed file path: " + exePathToCheckForUpdates);
 					mustExit = true;
 				}
 				else
+				{
 					AutoUpdater.MainWindow.CheckForUpdates(exePathToCheckForUpdates);
+					//mustExit = true;
+				}
 			}
 			else if (args[1].Equals("checkforupdatesilently", StringComparison.InvariantCultureIgnoreCase))
 			{
@@ -123,6 +134,8 @@ namespace AutoUpdater
 				App.CurrentExitCode = exitCodeOverride.Value;
 			try
 			{
+				int PID = Process.GetCurrentProcess().Id;
+				Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", exiting via ShutDownThisApplication with exitCode = " + App.CurrentExitCode, Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
 				Application.Current.Shutdown((int)App.CurrentExitCode);
 			}
 			catch
@@ -139,12 +152,28 @@ namespace AutoUpdater
 		}
 
 		public static int CurrentExitCode = 0;
+		private static bool alreadyOverrodeOnExit = false;
 		protected override void OnExit(ExitEventArgs e)
 		{
-			if (AutoUpdater.MainWindow.checkForUpdatesThread != null)
-				AutoUpdater.MainWindow.checkForUpdatesThread.Abort();
-			e.ApplicationExitCode = CurrentExitCode;
-			base.OnExit(e);
+			if (alreadyOverrodeOnExit)
+			{
+				e.ApplicationExitCode = CurrentExitCode;
+				base.OnExit(e);
+			}
+			else
+			{
+				int PID = Process.GetCurrentProcess().Id;
+				Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", reached 'override void OnExit', attempting to abort checkForUpdatesThread... (exitcode = " + App.CurrentExitCode + ")", Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
+
+				if (AutoUpdater.MainWindow.checkForUpdatesThread != null)
+					AutoUpdater.MainWindow.checkForUpdatesThread.Abort();
+				Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", successfully aborted checkForUpdatesThread... (exitcode = " + App.CurrentExitCode + ")", Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
+				Environment.Exit(CurrentExitCode);
+				Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", after calling 'Environment.Exit(CurrentExitCode);'", Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
+				//Process.GetCurrentProcess().Kill();
+				/*e.ApplicationExitCode = CurrentExitCode;
+				base.OnExit(e);*/
+			}
 		}
 	}
 }

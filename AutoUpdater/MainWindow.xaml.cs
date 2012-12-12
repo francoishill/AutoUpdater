@@ -408,11 +408,17 @@ namespace AutoUpdater
 					{
 						using (RegistryKey appkey = uninstallRootKey.OpenSubKey(appkeyname))
 						{
-							object urlInfoValue = appkey.GetValue("URLInfoAbout");
+							object publisherValue = appkey.GetValue("Publisher");
+							if (publisherValue == null)
+								continue;
+							if (!publisherValue.ToString().Trim().Equals(NsisInterop.cDefaultPublisherName))
+								continue;
+							/*object urlInfoValue = appkey.GetValue("URLInfoAbout");
 							if (urlInfoValue == null)
 								continue;//The value must exist for URLInfoAbout
 							if (!urlInfoValue.ToString().StartsWith(SettingsSimple.HomePcUrls.Instance.AppsPublishingRoot, StringComparison.InvariantCultureIgnoreCase))
-								continue;//The URLInfoAbout value must start with our AppsPublishingRoot
+								continue;//The URLInfoAbout value must start with our AppsPublishingRoot*/
+
 							//If we reached this point in the foreach loop, this application is one of our own, now make sure the EXE also exists
 							object displayIcon = appkey.GetValue("DisplayIcon");
 							//TODO: For now we use the DisplayIcon, is this the best way, what if DisplayIcon is different from EXE
