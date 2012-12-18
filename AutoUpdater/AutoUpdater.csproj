@@ -119,6 +119,9 @@
     <Compile Include="..\..\SharedClasses\ReflectionInterop.cs">
       <Link>ReflectionInterop.cs</Link>
     </Compile>
+    <Compile Include="..\..\SharedClasses\RegexInterop.cs">
+      <Link>RegexInterop.cs</Link>
+    </Compile>
     <Compile Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml.cs">
       <Link>UnhandledExceptionsWindow.xaml.cs</Link>
       <DependentUpon>UnhandledExceptionsWindow.xaml</DependentUpon>
@@ -150,14 +153,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\..\..\..\..\..\..\Francois\Dev\VSprojects\SharedClasses\ProcessesInterop.cs">
+    <Compile Include="..\..\SharedClasses\ProcessesInterop.cs">
       <Link>ProcessesInterop.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\..\..\..\..\Francois\Dev\VSprojects\SharedClasses\UserMessages.cs">
+    <Compile Include="..\..\SharedClasses\UserMessages.cs">
       <Link>UserMessages.cs</Link>
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="..\..\..\..\..\..\..\Francois\Dev\VSprojects\SharedClasses\UserMessages.designer.cs">
+    <Compile Include="..\..\SharedClasses\UserMessages.designer.cs">
       <Link>UserMessages.designer.cs</Link>
       <DependentUpon>UserMessages.cs</DependentUpon>
     </Compile>
@@ -292,7 +295,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <EmbeddedResource Include="..\..\..\..\..\..\..\Francois\Dev\VSprojects\SharedClasses\UserMessages.resx">
+    <EmbeddedResource Include="..\..\SharedClasses\UserMessages.resx">
       <Link>UserMessages.resx</Link>
       <DependentUpon>UserMessages.cs</DependentUpon>
     </EmbeddedResource>
