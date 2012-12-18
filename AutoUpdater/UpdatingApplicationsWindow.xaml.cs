@@ -175,7 +175,7 @@ namespace AutoUpdater
 			this.ApplicationName = ApplicationName;
 			this.NewerversionDetails = NewerversionDetails;
 			this.HasBeenUpdated = false;
-			this.IconImage = IconsInterop.IconExtractor.Extract(GetExePath()).IconToImageSource();
+			this.IconImage = IconsInterop.IconExtractor.Extract(GetExePath(), IconsInterop.IconExtractor.IconSize.Large).IconToImageSource();
 			string TODO_maySaveDownloadedFileLocation;
 			//Maybe save the location when AutoUpdater exist, so we can just install the downloads next time, save it with a version and MD5hash too
 		}

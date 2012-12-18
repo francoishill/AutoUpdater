@@ -95,8 +95,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\..\SharedClasses\AppTypeIndependant.cs">
+      <Link>AppTypeIndependant.cs</Link>
+    </Compile>
     <Compile Include="..\..\SharedClasses\ConvertersGeneral.cs">
       <Link>ConvertersGeneral.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\DeveloperCommunication.cs">
+      <Link>DeveloperCommunication.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\EncryptionInterop.cs">
       <Link>EncryptionInterop.cs</Link>
@@ -104,8 +110,18 @@
     <Compile Include="..\..\SharedClasses\LicensingInterop_Shared.cs">
       <Link>LicensingInterop_Shared.cs</Link>
     </Compile>
+    <Compile Include="..\..\SharedClasses\OwnAppsInterop.cs">
+      <Link>OwnAppsInterop.cs</Link>
+    </Compile>
     <Compile Include="..\..\SharedClasses\PhpInterop.cs">
       <Link>PhpInterop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\ReflectionInterop.cs">
+      <Link>ReflectionInterop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml.cs">
+      <Link>UnhandledExceptionsWindow.xaml.cs</Link>
+      <DependentUpon>UnhandledExceptionsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="UpdatingApplicationsWindow.xaml.cs">
       <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
@@ -117,6 +133,11 @@
     </Page>
     <Page Include="..\..\SharedClasses\InputBoxWPF.xaml">
       <Link>InputBoxWPF.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml">
+      <Link>UnhandledExceptionsWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -36,10 +36,14 @@ namespace AutoUpdater
 					+ exception.Message + Environment.NewLine + exception.StackTrace);
 			};
 
+			//Add functionality when checking updates online retreive its data, to also take in pipe separated
+			//list of Application Names, so we only have one WebRequest even when we call CheckAndUpdateAllApplicationsToLatestVersion
+
 			bool mustExit = false;
 			if (!WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
 			{
-				AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates(null, null);
+				AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates_ExceptionHandler();
+				//AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates(null, null);
 				//AutoUpdating.CheckAllForUpdates(err => UserMessages.ShowErrorMessage(err));
 				AutoUpdater.MainWindow
 					.CheckAndUpdateAllApplicationsToLatestVersion(err => UserMessages.ShowErrorMessage(err));

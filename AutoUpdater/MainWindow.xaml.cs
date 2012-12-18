@@ -298,7 +298,7 @@ namespace AutoUpdater
 						Application.Current.Dispatcher.Invoke((Action)delegate
 						{
 							tmpform = new MainWindow(InstalledVersion, File.GetCreationTime(applicationExePath), detailsIfNewer, false);
-							tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
+							tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath, IconsInterop.IconExtractor.IconSize.Large).IconToImageSource();
 							//MainWindow thisform = frm as MainWindow;
 							try
 							{
@@ -344,7 +344,7 @@ namespace AutoUpdater
 			Application.Current.Dispatcher.Invoke((Action)delegate
 			{
 				tmpform = new MainWindow(null, null, onlineAppDetails, installSilently);
-				//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath).IconToImageSource();
+				//tmpform.imageAppIcon.Source = IconsInterop.IconExtractor.Extract(applicationExePath, IconsInterop.IconExtractor.IconSize.Large).IconToImageSource();
 				//MainWindow thisform = frm as MainWindow;
 				try
 				{
@@ -393,51 +393,6 @@ namespace AutoUpdater
 			}
 		}
 
-		private static Dictionary<string, string> GetListOfInstalledApplications()
-		{
-			Dictionary<string, string> tmpdict = new Dictionary<string, string>();
-			using (var uninstallRootKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryInterop.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32)
-				.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
-			{
-				if (null == uninstallRootKey)
-					return null;
-				var appKeys = uninstallRootKey.GetSubKeyNames().ToArray();
-				foreach (string appkeyname in appKeys)
-				{
-					try
-					{
-						using (RegistryKey appkey = uninstallRootKey.OpenSubKey(appkeyname))
-						{
-							object publisherValue = appkey.GetValue("Publisher");
-							if (publisherValue == null)
-								continue;
-							if (!publisherValue.ToString().Trim().Equals(NsisInterop.cDefaultPublisherName))
-								continue;
-							/*object urlInfoValue = appkey.GetValue("URLInfoAbout");
-							if (urlInfoValue == null)
-								continue;//The value must exist for URLInfoAbout
-							if (!urlInfoValue.ToString().StartsWith(SettingsSimple.HomePcUrls.Instance.AppsPublishingRoot, StringComparison.InvariantCultureIgnoreCase))
-								continue;//The URLInfoAbout value must start with our AppsPublishingRoot*/
-
-							//If we reached this point in the foreach loop, this application is one of our own, now make sure the EXE also exists
-							object displayIcon = appkey.GetValue("DisplayIcon");
-							//TODO: For now we use the DisplayIcon, is this the best way, what if DisplayIcon is different from EXE
-							if (displayIcon == null)
-								continue;//We need the DisplayIcon value, it contains the full path of the EXE
-							if (!File.Exists(displayIcon.ToString()))
-								continue;//The application is probably not installed
-							//At this point we know the registry entry is our own application and it is actaully installed (file exists)
-							string exePath = displayIcon.ToString();
-							string appname = Path.GetFileNameWithoutExtension(exePath);
-							if (!tmpdict.ContainsKey(appname))
-								tmpdict.Add(appname, exePath);
-						}
-					}
-					catch { }
-				}
-			}
-			return tmpdict;
-		}
 		public static void CheckAndUpdateAllApplicationsToLatestVersion(Action<string> onError)
 		{
 			DateTime lastCheck = GetLastTimeCheckedAllForUpdates();
@@ -449,7 +404,7 @@ namespace AutoUpdater
 
 			ConcurrentDictionary<string, PublishDetails> appsToBeUpdated = new ConcurrentDictionary<string, PublishDetails>();
 
-			var installedApps = GetListOfInstalledApplications();
+			var installedApps = OwnAppsInterop.GetListOfInstalledApplications();
 			Parallel.ForEach<KeyValuePair<string, string>>(installedApps,
 				(appnameAndExepath) =>
 				{
