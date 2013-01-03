@@ -27,14 +27,17 @@ namespace AutoUpdater
 			//TODO: Do not use SingleInstance otherwise how will other application know if exit code is sent?
 			//TODO: Maybe look at placing the WpfNotificationWindow in its own app
 
+			if (false)//We just have this line for the AnalyseProjects, because it expects this new MainWindow() line
+				new MainWindow();
+
 			int PID = Process.GetCurrentProcess().Id;
 			Logging.LogMessageToFile("AutoUpdater, PID = " + PID.ToString() + ", running with commandline arguments: " + string.Join("|", Environment.GetCommandLineArgs()), Logging.LogTypes.Info, Logging.ReportingFrequencies.Daily, "AutoUpdater");
-			AppDomain.CurrentDomain.UnhandledException += (snder, exc) =>
+			/*AppDomain.CurrentDomain.UnhandledException += (snder, exc) =>
 			{
 				Exception exception = (Exception)exc.ExceptionObject;
 				UserMessages.ShowErrorMessage("Exception" + (exc.IsTerminating ? ", application will now exit" : "") + ":"
 					+ exception.Message + Environment.NewLine + exception.StackTrace);
-			};
+			};*/
 
 			//Add functionality when checking updates online retreive its data, to also take in pipe separated
 			//list of Application Names, so we only have one WebRequest even when we call CheckAndUpdateAllApplicationsToLatestVersion
