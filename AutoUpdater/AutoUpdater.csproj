@@ -23,7 +23,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;WPF</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WPF,NOTUSEINTERCEPTOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -33,7 +33,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;WPF</DefineConstants>
+    <DefineConstants>TRACE;WPF,NOTUSEINTERCEPTOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -41,7 +41,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;WPF</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WPF,NOTUSEINTERCEPTOR</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisLogFile>bin\Debug\AutoUpdater.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
@@ -77,6 +77,9 @@
   <ItemGroup>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="Microsoft.WindowsAPICodePack.Shell">
+      <HintPath>..\..\..\DLLs\Windows API\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -129,6 +132,9 @@
     <Compile Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml.cs">
       <Link>UnhandledExceptionsWindow.xaml.cs</Link>
       <DependentUpon>UnhandledExceptionsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\Windows7JumpListsInterop.cs">
+      <Link>Windows7JumpListsInterop.cs</Link>
     </Compile>
     <Compile Include="UpdatingApplicationsWindow.xaml.cs">
       <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
