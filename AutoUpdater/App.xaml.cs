@@ -24,9 +24,6 @@ namespace AutoUpdater
 
 		protected override void OnStartup(StartupEventArgs e)
 		{
-			//TODO: Do not use SingleInstance otherwise how will other application know if exit code is sent?
-			//TODO: Maybe look at placing the WpfNotificationWindow in its own app
-
 			if (false)//We just have this line for the AnalyseProjects, because it expects this new MainWindow() line
 				new MainWindow();
 

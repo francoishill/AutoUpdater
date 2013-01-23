@@ -176,8 +176,6 @@ namespace AutoUpdater
 			this.NewerversionDetails = NewerversionDetails;
 			this.HasBeenUpdated = false;
 			this.IconImage = IconsInterop.IconExtractor.Extract(GetExePath(), IconsInterop.IconExtractor.IconSize.Large).IconToImageSource();
-			string TODO_maySaveDownloadedFileLocation;
-			//Maybe save the location when AutoUpdater exist, so we can just install the downloads next time, save it with a version and MD5hash too
 		}
 
 		private string GetExePath()
@@ -220,7 +218,7 @@ namespace AutoUpdater
 					ProgressPercentage = progperc;
 					StatusMessage = string.Format("Download speed = {0:0.###} kB/s", bytespersec / 1024D);
 				},
-				delegate { return true; });//TODO: Validate all HTTPS/SSL certificates
+				delegate { return true; });
 
 			if (downloadResult != true)//Error occurred, client or server side
 			{

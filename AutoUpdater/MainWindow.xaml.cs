@@ -507,7 +507,7 @@ namespace AutoUpdater
 							UpdateProgress(progperc, true);
 							UpdateStatus(string.Format("Download speed = {0:0.###} kB/s", bytespersec / 1024D), true);
 						},
-						delegate { return true; });//TODO: Validate all HTTPS/SSL certificates
+						delegate { return true; });
 
 					CallFromSeparateThread(delegate
 					{
@@ -651,7 +651,6 @@ namespace AutoUpdater
 			progressBar1.Refresh();
 			labelStatus.Refresh();
 			this.Refresh();
-			//TODO: FFS!!! Progress updates does not fire at work, could be caching, firewall, etc???
 		}
 
 		void client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
@@ -789,7 +788,6 @@ namespace AutoUpdater
 	//    public string MD5Hash;
 	//    public DateTime PublishedDate;
 	//    public string FtpUrl;
-	//    //TODO: May want to add TracUrl here
 	//    public PublishDetails() { }
 	//    public PublishDetails(string ApplicationName, string ApplicationVersion, long SetupSize, string MD5Hash, DateTime PublishedDate, string FtpUrl)
 	//    {
