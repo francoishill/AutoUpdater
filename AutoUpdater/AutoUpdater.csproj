@@ -102,108 +102,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="..\..\SharedClasses\AppTypeIndependant.cs">
-      <Link>AppTypeIndependant.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\ConvertersGeneral.cs">
-      <Link>ConvertersGeneral.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\DeveloperCommunication.cs">
-      <Link>DeveloperCommunication.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\EncryptionInterop.cs">
-      <Link>EncryptionInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\LicensingInterop_Shared.cs">
-      <Link>LicensingInterop_Shared.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\OwnAppsInterop.cs">
-      <Link>OwnAppsInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\PhpInterop.cs">
-      <Link>PhpInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\ReflectionInterop.cs">
-      <Link>ReflectionInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\RegexInterop.cs">
-      <Link>RegexInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml.cs">
-      <Link>UnhandledExceptionsWindow.xaml.cs</Link>
-      <DependentUpon>UnhandledExceptionsWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\Windows7JumpListsInterop.cs">
-      <Link>Windows7JumpListsInterop.cs</Link>
-    </Compile>
-    <Compile Include="UpdatingApplicationsWindow.xaml.cs">
-      <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
-    </Compile>
-    <Page Include="..\..\SharedClasses\AboutWindow2.xaml">
-      <Link>AboutWindow2.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\SharedClasses\InputBoxWPF.xaml">
-      <Link>InputBoxWPF.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\SharedClasses\UnhandledExceptionsWindow.xaml">
-      <Link>UnhandledExceptionsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\SharedClasses\WpfNotificationWindow.xaml">
-      <Link>WpfNotificationWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="..\..\SharedClasses\ProcessesInterop.cs">
-      <Link>ProcessesInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\UserMessages.cs">
-      <Link>UserMessages.cs</Link>
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\UserMessages.designer.cs">
-      <Link>UserMessages.designer.cs</Link>
-      <DependentUpon>UserMessages.cs</DependentUpon>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\AboutWindow2.xaml.cs">
-      <Link>AboutWindow2.xaml.cs</Link>
-      <DependentUpon>AboutWindow2.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\AutoUpdating.cs">
-      <Link>AutoUpdating.cs</Link>
-    </Compile>
     <Compile Include="..\..\SharedClasses\BuildingInterop.cs">
       <Link>BuildingInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\CalledFromService.cs">
-      <Link>CalledFromService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\CompareObjects.cs">
-      <Link>CompareObjects.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\EncodeAndDecodeInterop.cs">
-      <Link>EncodeAndDecodeInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\EventHandlers.cs">
-      <Link>EventHandlers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\fastJSON.cs">
-      <Link>fastJSON.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\FeedbackMessageTypes.cs">
-      <Link>FeedbackMessageTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\Generics.cs">
-      <Link>Generics.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\Helpers.cs">
       <Link>Helpers.cs</Link>
@@ -211,26 +111,14 @@
     <Compile Include="..\..\SharedClasses\IconsInterop.cs">
       <Link>IconsInterop.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\InputBoxWPF.xaml.cs">
-      <Link>InputBoxWPF.xaml.cs</Link>
-      <DependentUpon>InputBoxWPF.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\Logging.cs">
-      <Link>Logging.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\MiniDownloadBarForm.cs">
-      <Link>MiniDownloadBarForm.cs</Link>
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\MiniDownloadBarForm.designer.cs">
-      <Link>MiniDownloadBarForm.designer.cs</Link>
-      <DependentUpon>MiniDownloadBarForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="..\..\SharedClasses\NetworkInteropSimple.cs">
       <Link>NetworkInteropSimple.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\NsisInterop.cs">
       <Link>NsisInterop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\SharedClasses\OwnAppsInterop.cs">
+      <Link>OwnAppsInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\PhpDownloadingInterop.cs">
       <Link>PhpDownloadingInterop.cs</Link>
@@ -238,20 +126,11 @@
     <Compile Include="..\..\SharedClasses\PublishInterop.cs">
       <Link>PublishInterop.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\RegistryInterop.cs">
-      <Link>RegistryInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\SettingsInterop.cs">
-      <Link>SettingsInterop.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\SettingsSimple.cs">
-      <Link>SettingsSimple.cs</Link>
+    <Compile Include="..\..\SharedClasses\RegexInterop.cs">
+      <Link>RegexInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\SharedClassesSettings.cs">
       <Link>SharedClassesSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\ShowNoCallbackNotificationInterop.cs">
-      <Link>ShowNoCallbackNotificationInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\SharedClasses\StandaloneUploaderInterop.cs">
       <Link>StandaloneUploaderInterop.cs</Link>
@@ -259,25 +138,16 @@
     <Compile Include="..\..\SharedClasses\StringExtensions.cs">
       <Link>StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\ThreadingInterop.cs">
-      <Link>ThreadingInterop.cs</Link>
-    </Compile>
     <Compile Include="..\..\SharedClasses\UploadingProtocolTypesEnum.cs">
       <Link>UploadingProtocolTypesEnum.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\WebInterop.cs">
-      <Link>WebInterop.cs</Link>
+    <Compile Include="UpdatingApplicationsWindow.xaml.cs">
+      <DependentUpon>UpdatingApplicationsWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="..\..\SharedClasses\Win32Api.cs">
-      <Link>Win32Api.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\WPFdraggableCanvas.cs">
-      <Link>WPFdraggableCanvas.cs</Link>
-    </Compile>
-    <Compile Include="..\..\SharedClasses\WpfNotificationWindow.xaml.cs">
-      <Link>WpfNotificationWindow.xaml.cs</Link>
-      <DependentUpon>WpfNotificationWindow.xaml</DependentUpon>
-    </Compile>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -305,14 +175,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <EmbeddedResource Include="..\..\SharedClasses\UserMessages.resx">
-      <Link>UserMessages.resx</Link>
-      <DependentUpon>UserMessages.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\..\SharedClasses\MiniDownloadBarForm.resx">
-      <Link>MiniDownloadBarForm.resx</Link>
-      <DependentUpon>MiniDownloadBarForm.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -328,6 +190,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="next.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\SharedClasses\_OwnAppsSharedDll\_OwnAppsSharedDll.csproj">
+      <Project>{5AA050A3-9D5F-4FEF-9071-BB5D87A7BE3F}</Project>
+      <Name>_OwnAppsSharedDll</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

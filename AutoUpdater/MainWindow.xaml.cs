@@ -273,17 +273,18 @@ namespace AutoUpdater
 			{
 				App.CurrentExitCode = (int)AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
 
+				//EventLog.WriteEntry("AutoUpdater", "Unable to check for updates for '" + applicationExePath + "': " + errIfFail);
 				Console.Error.WriteLine("Unable to check for updates: " + errIfFail);
 				WpfNotificationWindow.ShowNotification("Cannot check for updates of application " + ApplicationName + ": " + errIfFail,
-				notificationType: ShowNoCallbackNotificationInterop.NotificationTypes.Warning,
-				onCloseCallback_WasClickedToCallback: (closeobj, wascallbackclicked) =>
-				{
-					WpfNotificationWindow.CloseNotificationWindow();
-					//Application.Current.Dispatcher.InvokeShutdown();
-					//if (!wascallbackclicked)Should always close on click too, was unable to check for updates, cannot do anything else
-					App.ShutDownThisApplication();
-				},
-				timeout: null);
+					notificationType: ShowNoCallbackNotificationInterop.NotificationTypes.Warning,
+					onCloseCallback_WasClickedToCallback: (closeobj, wascallbackclicked) =>
+					{
+						WpfNotificationWindow.CloseNotificationWindow();
+						//Application.Current.Dispatcher.InvokeShutdown();
+						//if (!wascallbackclicked)Should always close on click too, was unable to check for updates, cannot do anything else
+						App.ShutDownThisApplication();
+					},
+					timeout: null);
 			}
 			else if (uptodate == false)//Newer version available
 			{
@@ -405,30 +406,48 @@ namespace AutoUpdater
 			ConcurrentDictionary<string, PublishDetails> appsToBeUpdated = new ConcurrentDictionary<string, PublishDetails>();
 
 			var installedApps = OwnAppsInterop.GetListOfInstalledApplications();
-			Parallel.ForEach<KeyValuePair<string, string>>(installedApps,
-				(appnameAndExepath) =>
-				{
-					string installedVersion = FileVersionInfo.GetVersionInfo(appnameAndExepath.Value).FileVersion;
+			var taskScheduler = new TaskScheduler2(10, ApartmentState.STA, ThreadPriority.Highest);
+			List<Task> taskList = new List<Task>();
+			
+			foreach (var tmpNameAndExepath in installedApps)
+			/*Parallel.ForEach<KeyValuePair<string, string>>(installedApps,
+			(appnameAndExepath) =>*/
+			{
+				Task tmpTask = new Task(
+					(arg1) =>
+					{
+						KeyValuePair<string, string> appnameAndExepath = (KeyValuePair<string, string>)arg1;
 
-					string errIfNull;
-					PublishDetails pubdetails;
-					bool? result = IsApplicationUpToDate(
-						appnameAndExepath.Key,
-						installedVersion,
-						out errIfNull,
-						out pubdetails);
-					if (result == null)//Error occurred
-					{
-						ShowNoCallbackNotificationInterop.Notify(onError, string.Format("Could not check for application '{0}' updates: {1}", appnameAndExepath.Key, errIfNull), "Error", ShowNoCallbackNotificationInterop.NotificationTypes.Error);
-						return;
-					}
-					if (result == false)//We have updates available
-					{
-						//InstallLatest(appnameAndExepath.Key, false);
-						while (!appsToBeUpdated.TryAdd(appnameAndExepath.Key, pubdetails))
-							Thread.Sleep(100);
-					}
-				});
+						string installedVersion = FileVersionInfo.GetVersionInfo(appnameAndExepath.Value).FileVersion;
+
+						string errIfNull;
+						PublishDetails pubdetails;
+						bool? result = IsApplicationUpToDate(
+							appnameAndExepath.Key,
+							installedVersion,
+							out errIfNull,
+							out pubdetails);
+						if (result == null)//Error occurred
+						{
+							/*Dispatcher.CurrentDispatcher.Invoke((Action)delegate
+							{*/
+							ShowNoCallbackNotificationInterop.Notify(onError, string.Format("Could not check for application '{0}' updates: {1}", appnameAndExepath.Key, errIfNull), "Error", ShowNoCallbackNotificationInterop.NotificationTypes.Error);
+							/*});*/
+							return;
+						}
+						if (result == false)//We have updates available
+						{
+							//InstallLatest(appnameAndExepath.Key, false);
+							while (!appsToBeUpdated.TryAdd(appnameAndExepath.Key, pubdetails))
+								Thread.Sleep(100);
+						}
+					},
+					tmpNameAndExepath);
+				tmpTask.Start(taskScheduler);
+				taskList.Add(tmpTask);
+				/*});*/
+			}
+			Task.WaitAll(taskList.ToArray());
 
 			if (appsToBeUpdated.Count > 0)
 			{
@@ -438,7 +457,7 @@ namespace AutoUpdater
 			}
 		}
 
-		WebClient client;
+		//WebClient client;
 		//DateTime startTime;
 		string localFileTempPath;
 		private void downloadButton_Click(object sender, RoutedEventArgs e)
