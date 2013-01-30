@@ -273,8 +273,8 @@ namespace AutoUpdater
 			{
 				App.CurrentExitCode = (int)AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
 
-				//EventLog.WriteEntry("AutoUpdater", "Unable to check for updates for '" + applicationExePath + "': " + errIfFail);
-				Console.Error.WriteLine("Unable to check for updates: " + errIfFail);
+				EventLog.WriteEntry("AutoUpdater", "Unable to check for updates for '" + applicationExePath + "': " + errIfFail);
+				//Console.Error.WriteLine("Unable to check for updates: " + errIfFail);
 				WpfNotificationWindow.ShowNotification("Cannot check for updates of application " + ApplicationName + ": " + errIfFail,
 					notificationType: ShowNoCallbackNotificationInterop.NotificationTypes.Warning,
 					onCloseCallback_WasClickedToCallback: (closeobj, wascallbackclicked) =>
