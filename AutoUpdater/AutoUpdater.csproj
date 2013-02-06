@@ -135,9 +135,6 @@
     <Compile Include="..\..\SharedClasses\StandaloneUploaderInterop.cs">
       <Link>StandaloneUploaderInterop.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\StringExtensions.cs">
-      <Link>StringExtensions.cs</Link>
-    </Compile>
     <Compile Include="..\..\SharedClasses\UploadingProtocolTypesEnum.cs">
       <Link>UploadingProtocolTypesEnum.cs</Link>
     </Compile>
