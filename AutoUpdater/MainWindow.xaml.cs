@@ -155,8 +155,7 @@ namespace AutoUpdater
 				PublishDetails.OnlineJsonCategory,
 				ApplicationName + PublishDetails.LastestVersionJsonNamePostfix,
 				onlineAppDetails,
-				out errIfFail,
-				TimeSpan.FromSeconds(10));
+				out errIfFail);
 			if (populatesuccess)
 			{
 				//return CompareVersions(installedVersion, onlineAppDetails.ApplicationVersion);
@@ -339,8 +338,7 @@ namespace AutoUpdater
 				PublishDetails.OnlineJsonCategory,
 				applicationName + PublishDetails.LastestVersionJsonNamePostfix,
 				onlineAppDetails,
-				out errIfFail,
-				TimeSpan.FromSeconds(10));
+				out errIfFail);
 
 			Application.Current.Dispatcher.Invoke((Action)delegate
 			{

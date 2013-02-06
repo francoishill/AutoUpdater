@@ -129,9 +129,6 @@
     <Compile Include="..\..\SharedClasses\RegexInterop.cs">
       <Link>RegexInterop.cs</Link>
     </Compile>
-    <Compile Include="..\..\SharedClasses\SharedClassesSettings.cs">
-      <Link>SharedClassesSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\SharedClasses\StandaloneUploaderInterop.cs">
       <Link>StandaloneUploaderInterop.cs</Link>
     </Compile>
