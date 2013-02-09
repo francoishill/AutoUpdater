@@ -406,11 +406,16 @@ namespace AutoUpdater
 			var installedApps = OwnAppsInterop.GetListOfInstalledApplications();
 			var taskScheduler = new TaskScheduler2(10, ApartmentState.STA, ThreadPriority.Highest);
 			List<Task> taskList = new List<Task>();
-			
+
 			foreach (var tmpNameAndExepath in installedApps)
 			/*Parallel.ForEach<KeyValuePair<string, string>>(installedApps,
 			(appnameAndExepath) =>*/
 			{
+				//string key = tmpNameAndExepath.Key;
+				//if (key.ToLower() != "MonitorSystem".ToLower()
+				//	&& key.ToLower() != "KillWadiso6".ToLower())
+				//	continue;
+
 				Task tmpTask = new Task(
 					(arg1) =>
 					{
