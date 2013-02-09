@@ -296,10 +296,11 @@ namespace AutoUpdater
 				(app) =>
 				{
 					app.DownloadNewestVersionForApplication(false);
-					app.InstallApplication(installSilently, false);
+					if (this.DownloadedFilePathIfSucceeded != null)
+						app.InstallApplication(installSilently, false);
 				},
 				separateThread,
-				true);
+				!separateThread);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged = delegate { };
