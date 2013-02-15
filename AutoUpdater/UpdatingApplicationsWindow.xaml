@@ -4,8 +4,8 @@
 		xmlns:local='clr-namespace:AutoUpdater'
 		xmlns:sharedclasses='clr-namespace:SharedClasses;assembly=_OwnAppsSharedDll'
 		Title="UpdatingApplicationsWindow"
-		Height='736'
-		Width='513'
+		Height='600'
+		Width='800'
 		WindowStartupLocation='CenterScreen'
 		Loaded='Window_Loaded'>
 	<Window.Resources>
@@ -21,14 +21,14 @@
 		</Grid.RowDefinitions>
 		<Button Grid.Row='0'
 				Name='buttonUpdateAndInstallAllSilently'
-				Content='Update and install all silently'
+				Content='Update all and install silently'
 				IsEnabled='False'
 				VerticalAlignment='Top'
 				HorizontalAlignment='Left'
-				Click='buttonUpdateAndInstallAllSilently_Click' />
+				Click='buttonUpdateAllAndInstallSilently_Click' />
 		<ListBox Grid.Row='1'
 				 Name='listboxApps'
-				 ScrollViewer.CanContentScroll='True'
+				 ScrollViewer.CanContentScroll='False'
 				 ScrollViewer.HorizontalScrollBarVisibility='Auto'
 				 ScrollViewer.VerticalScrollBarVisibility='Auto'
 				 SelectionChanged='listboxApps_SelectionChanged'>

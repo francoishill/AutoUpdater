@@ -7,6 +7,7 @@ using System.Windows;
 using System.IO;
 using SharedClasses;
 using System.Diagnostics;
+using System.Threading;
 
 namespace AutoUpdater
 {
@@ -93,7 +94,7 @@ namespace AutoUpdater
 				AutoUpdating.ExitCodes exitCode = AutoUpdating.ExitCodes.UpToDateExitCode;
 				if (!checkSuccess.HasValue)
 				{
-					if (onlineVersionDetails == null)//Unknown erro
+					if (onlineVersionDetails == null)//Unknown error
 						exitCode = AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode;
 					else//We have online details so the installed version is newer than online
 						exitCode = AutoUpdating.ExitCodes.InstalledVersionNewerThanOnline;
@@ -115,7 +116,40 @@ namespace AutoUpdater
 				string applicationName = args[2];
 				if (File.Exists(applicationName))
 					applicationName = Path.GetFileNameWithoutExtension(applicationName);
-				AutoUpdater.MainWindow.InstallLatest(applicationName, installSilently);
+
+				//AutoUpdater.MainWindow.InstallLatest(applicationName, installSilently);
+				var tmpAppToUpdate = new Dictionary<string, PublishDetails>();
+
+				const int cMaxRetryTimes = 3;
+				int currentRetriedTimes = 0;
+
+				PublishDetails onlineAppDetails = new PublishDetails();
+				string errIfFail;
+			retryPopulateJson:
+				bool populatesuccess = WebInterop.PopulateObjectFromOnline(
+					PublishDetails.OnlineJsonCategory,
+					applicationName + PublishDetails.LastestVersionJsonNamePostfix,
+					onlineAppDetails,
+					out errIfFail);
+				if (!populatesuccess)
+				{
+					if (currentRetriedTimes++ < cMaxRetryTimes)
+					{
+						Thread.Sleep(500);
+						goto retryPopulateJson;
+					}
+					Console.Error.Write(errIfFail);
+					ShutDownThisApplication((int)AutoUpdating.ExitCodes.UnableToCheckForUpdatesErrorCode);
+				}
+
+				bool allOpenProcsKilled = ProcessesInterop.KillProcess(
+					applicationName,
+					delegate { });//Dont need to do anything with the actionOnMessage)
+
+				tmpAppToUpdate.Add(applicationName, onlineAppDetails);
+				var tmpwin = new UpdatingApplicationsWindow(tmpAppToUpdate, allOpenProcsKilled);
+				tmpwin.Height = 400;
+				tmpwin.ShowDialog();
 			}
 			/*else if (args[1].Equals("checkandupdateall", StringComparison.InvariantCultureIgnoreCase))
 			{

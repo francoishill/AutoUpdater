@@ -24,11 +24,13 @@ namespace AutoUpdater
 	/// </summary>
 	public partial class UpdatingApplicationsWindow : Window
 	{
-		ObservableCollection<ApplicationBeingUpdated> applicationList = new ObservableCollection<ApplicationBeingUpdated>();
+		private ObservableCollection<ApplicationBeingUpdated> applicationList = new ObservableCollection<ApplicationBeingUpdated>();
+		private bool autoStartDownloadingAndInstallingSilently = false;
 
-		public UpdatingApplicationsWindow(IDictionary<string, PublishDetails> appListWithNewerDetails)
+		public UpdatingApplicationsWindow(IDictionary<string, PublishDetails> appListWithNewerDetails, bool autoStartDownloadingAndInstallingSilently = false)
 		{
 			InitializeComponent();
+			this.autoStartDownloadingAndInstallingSilently = autoStartDownloadingAndInstallingSilently;
 
 			foreach (var appname in appListWithNewerDetails)
 				applicationList.Add(new ApplicationBeingUpdated(appname.Key, appname.Value));
@@ -39,37 +41,72 @@ namespace AutoUpdater
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
 			listboxApps.ItemsSource = applicationList;
+
+			if (autoStartDownloadingAndInstallingSilently)
+				UpdateAllAndInstallSilently();
 		}
 
 		private void buttonDownload_Click(object sender, RoutedEventArgs e)
 		{
+			if (isBusyUpdatingAll)
+			{
+				UserMessages.ShowWarningMessage("Already busy updating all, please be patient...");
+				return;
+			}
+
 			WPFHelper.GetFromObjectSender<ApplicationBeingUpdated>(sender)
 				.DownloadNewestVersionForApplication(true);
 		}
 
 		private void buttonInstall_Click(object sender, RoutedEventArgs e)
 		{
+			if (isBusyUpdatingAll)
+			{
+				UserMessages.ShowWarningMessage("Already busy updating all, please be patient...");
+				return;
+			}
+
 			WPFHelper.GetFromObjectSender<ApplicationBeingUpdated>(sender)
 				.InstallApplication(false, true);
 		}
 
 		private void buttonInstallSilently_Click(object sender, RoutedEventArgs e)
 		{
+			if (isBusyUpdatingAll)
+			{
+				UserMessages.ShowWarningMessage("Already busy updating all, please be patient...");
+				return;
+			}
+
 			WPFHelper.GetFromObjectSender<ApplicationBeingUpdated>(sender)
 				.InstallApplication(true, true);
 		}
 
-		private void buttonUpdateAndInstallAllSilently_Click(object sender, RoutedEventArgs e)
+		private bool isBusyUpdatingAll = false;
+		private void buttonUpdateAllAndInstallSilently_Click(object sender, RoutedEventArgs e)
 		{
+			UpdateAllAndInstallSilently();
+		}
+
+		private void UpdateAllAndInstallSilently()
+		{
+			isBusyUpdatingAll = true;
 			buttonUpdateAndInstallAllSilently.IsEnabled = false;
 			ThreadingInterop.DoAction(
 				delegate
 				{
-					Parallel.ForEach(
+					/*Parallel.ForEach(
 						applicationList,
-						app => app.DownloadAndInstall(true, true));
+						app => app.DownloadAndInstall(true, true));*/
+					//Rather leave the parallel threading otherwise it just times out almost half of the apps each time
+					foreach (var app in applicationList)
+						app.DownloadAndInstall(true, true);
 
-					this.Dispatcher.Invoke((Action)delegate { buttonUpdateAndInstallAllSilently.IsEnabled = true; });
+					this.Dispatcher.Invoke((Action)delegate
+					{
+						isBusyUpdatingAll = false;
+						buttonUpdateAndInstallAllSilently.IsEnabled = true;
+					});
 				},
 				false);
 		}
@@ -96,7 +133,7 @@ namespace AutoUpdater
 		private bool HasBeenUpdated;// { get; private set; }
 		private ApplicationState _currentstate;
 		public ApplicationState CurrentState { get { return _currentstate; } set { _currentstate = value; OnPropertyChanged("CurrentState"); } }
-
+		private int _maximumDownloadRetries = 3;
 
 		private int _progresspercentage;
 		public int ProgressPercentage { get { return _progresspercentage; } set { _progresspercentage = value; OnPropertyChanged("ProgressPercentage", "ProgressVisible"); } }
@@ -213,6 +250,7 @@ namespace AutoUpdater
 					waitUntilFinishIfSeparateThread);
 		}
 
+		private int _currentRetries = 0;
 		public void DownloadNewestVersionForApplication(bool separateThread = true)
 		{
 			PerformActionOnApplication(
@@ -224,20 +262,31 @@ namespace AutoUpdater
 						return;
 					}
 
+					_currentRetries = 0;
+
+				retrydownloading:
 					app.CurrentState = ApplicationBeingUpdated.ApplicationState.BusyDownloading;
 					app.StatusMessage = "Downloading latest version, please be patient...";
 
 					string errIfFailed;
 					bool downloadSuccess = app.DownloadLatestVersion(out errIfFailed);
-					if (downloadSuccess)
+					if (!downloadSuccess)
 					{
-						app.CurrentState = ApplicationBeingUpdated.ApplicationState.SuccessfullyDownloaded;
-						app.StatusMessage = "Update downloaded, click button to install it.";
+						if (_currentRetries++ < _maximumDownloadRetries)
+						{
+							app.StatusMessage = string.Format(
+								"Download failed, auto retrying {0}/{1}. Failed reason: {2}",
+								_currentRetries, _maximumDownloadRetries, errIfFailed);
+							goto retrydownloading;
+						}
+
+						app.CurrentState = ApplicationBeingUpdated.ApplicationState.FailedDownload;
+						app.StatusMessage = "Failed reason: " + errIfFailed;
 					}
 					else
 					{
-						app.CurrentState = ApplicationBeingUpdated.ApplicationState.FailedDownload;
-						app.StatusMessage = "Failed reason: " + errIfFailed;
+						app.CurrentState = ApplicationBeingUpdated.ApplicationState.SuccessfullyDownloaded;
+						app.StatusMessage = "Update downloaded, click button to install it.";
 					}
 				},
 				separateThread,
@@ -277,7 +326,7 @@ namespace AutoUpdater
 							installSilently
 							? ApplicationBeingUpdated.ApplicationState.FailedInstallSilently
 							: ApplicationBeingUpdated.ApplicationState.FailedInstallNonsilent;
-						app.StatusMessage = "Setup did not successfully update the application.";
+						app.StatusMessage = "Setup did not successfully update the application (please close the application first if it's currently running).";
 					}
 				},
 				separateThread,
@@ -288,7 +337,7 @@ namespace AutoUpdater
 		{
 			if (this.HasBeenUpdated)
 			{
-				this.StatusMessage = "Application already up to date";
+				this.StatusMessage = "Application already up to date.";
 				return;
 			}
 
