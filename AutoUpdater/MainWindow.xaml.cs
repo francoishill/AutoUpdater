@@ -366,17 +366,22 @@ namespace AutoUpdater
 			});
 		}
 
+		private const string cLastCheckSubfolderName = "_LastChecked";
+		private const string cLastCheckFilenameStart = "LastTimeCheckAllForUpdates_";
+		private const string cLastCheckFileExtensionWithDot = ".fjset";
 		private const string cDateFormatForLastTimeCheckAllForUpdates = "yyyy_MM_dd__HH_mm_ss";
+		private readonly static TimeSpan cMinimumWaitAfterLastCheckAllForUpdates = TimeSpan.FromMinutes(10);
 		private static string GetFilePathToStoreLastTimeCheckedAllForUpdates()
 		{
-			return SettingsInterop.GetFullFilePathInLocalAppdata("LastTimeCheckAllForUpdates.fjset", "AutoUpdater");
+			return SettingsInterop.GetFullFilePathInLocalAppdata(
+				string.Format("{0}{1}{2}", cLastCheckFilenameStart, Process.GetCurrentProcess().Id, cLastCheckFileExtensionWithDot),
+				"AutoUpdater",
+				cLastCheckSubfolderName);
 		}
-		private static DateTime GetLastTimeCheckedAllForUpdates()
+		private static DateTime ParseLastCheckedFilecontentToDateTime(string fileContent)
 		{
-			string filepath = GetFilePathToStoreLastTimeCheckedAllForUpdates();
 			DateTime tmpParsedDate;
-			if (!File.Exists(filepath)
-				|| !DateTime.TryParseExact(File.ReadAllText(filepath).Trim(), cDateFormatForLastTimeCheckAllForUpdates, CultureInfo.InvariantCulture, DateTimeStyles.None, out tmpParsedDate))
+			if (!DateTime.TryParseExact(fileContent.Trim(), cDateFormatForLastTimeCheckAllForUpdates, CultureInfo.InvariantCulture, DateTimeStyles.None, out tmpParsedDate))
 				return DateTime.MinValue;
 			return tmpParsedDate;
 		}
@@ -391,11 +396,50 @@ namespace AutoUpdater
 				onError(exc.Message);
 			}
 		}
+		private static bool AlreadyCheckedForUpdatesRecentlyOrIsBusyCheckingInAnotherProcess()
+		{
+			string dir = Path.GetDirectoryName(SettingsInterop.GetFullFilePathInLocalAppdata("tmp.txt", "AutoUpdater", cLastCheckSubfolderName));
+			foreach (var fjsetFile in Directory.GetFiles(dir, "*" + cLastCheckFileExtensionWithDot, SearchOption.TopDirectoryOnly))
+			{
+				string filenameOnlyWithoutExtension = Path.GetFileNameWithoutExtension(fjsetFile);
+				if (!filenameOnlyWithoutExtension.StartsWith(cLastCheckFilenameStart, StringComparison.InvariantCultureIgnoreCase))
+					continue;
+				string procIdStr = filenameOnlyWithoutExtension.Substring(cLastCheckFilenameStart.Length);
+				int processID;
+				if (!int.TryParse(procIdStr, out processID))
+					continue;
+				if (processID == Process.GetCurrentProcess().Id)
+					continue;
+				try
+				{
+					var proc = Process.GetProcessById(processID);
+					if (proc != null)
+					{
+						var lastCheckOfProcessAlreadyRunning = ParseLastCheckedFilecontentToDateTime(File.ReadAllText(fjsetFile));
+						if (DateTime.Now.Subtract(lastCheckOfProcessAlreadyRunning) >= cMinimumWaitAfterLastCheckAllForUpdates)
+						{
+							//If another process is running and did check longer ago than or minimum wait time, kill the other process
+							proc.Kill();
+							File.Delete(fjsetFile);
+							continue;
+						}
+					}
+				}
+				catch { }//If process not running it will throw exception
+
+				var lastCheckWhereProcessIsNotRunningAnymore = ParseLastCheckedFilecontentToDateTime(File.ReadAllText(fjsetFile));
+				if (DateTime.Now.Subtract(lastCheckWhereProcessIsNotRunningAnymore) < cMinimumWaitAfterLastCheckAllForUpdates)//Do no check more than every 10 minutes
+					return true;
+				else
+					File.Delete(fjsetFile);
+			}
+
+			return false;
+		}
 
 		public static void CheckAndUpdateAllApplicationsToLatestVersion(Action<string> onError)
 		{
-			DateTime lastCheck = GetLastTimeCheckedAllForUpdates();
-			if (DateTime.Now.Subtract(lastCheck).TotalMinutes < 10)//Do no check more than every 10 minutes
+			if (AlreadyCheckedForUpdatesRecentlyOrIsBusyCheckingInAnotherProcess())
 				return;
 			SetLastTimeCheckedAllForUpdates(DateTime.Now, onError);
 

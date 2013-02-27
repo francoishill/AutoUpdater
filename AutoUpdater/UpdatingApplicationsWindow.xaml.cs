@@ -32,7 +32,7 @@ namespace AutoUpdater
 			InitializeComponent();
 			this.autoStartDownloadingAndInstallingSilently = autoStartDownloadingAndInstallingSilently;
 
-			foreach (var appname in appListWithNewerDetails)
+			foreach (var appname in appListWithNewerDetails.OrderBy(kv => kv.Key))
 				applicationList.Add(new ApplicationBeingUpdated(appname.Key, appname.Value));
 
 			buttonUpdateAndInstallAllSilently.IsEnabled = applicationList.Count > 0;
