@@ -367,17 +367,22 @@ namespace AutoUpdater
 		}
 
 		private const string cLastCheckSubfolderName = "_LastChecked";
-		private const string cLastCheckFilenameStart = "LastTimeCheckAllForUpdates_";
+		private const string cLastCheckFilenameStart = "LastTimeCheckAllForUpdates";
 		private const string cLastCheckFileExtensionWithDot = ".fjset";
 		private const string cDateFormatForLastTimeCheckAllForUpdates = "yyyy_MM_dd__HH_mm_ss";
 		private readonly static TimeSpan cMinimumWaitAfterLastCheckAllForUpdates = TimeSpan.FromMinutes(10);
-		private static string GetFilePathToStoreLastTimeCheckedAllForUpdates()
+
+		private static MultiUserInterop.LockSingleProcessAction _lockSingleApp = new MultiUserInterop.LockSingleProcessAction(
+			Path.GetDirectoryName(SettingsInterop.GetFullFilePathInLocalAppdata("tmp.txt", "AutoUpdater", cLastCheckSubfolderName)),
+			cLastCheckFilenameStart);
+
+		/*private static string GetFilePathToStoreLastTimeCheckedAllForUpdates()
 		{
 			return SettingsInterop.GetFullFilePathInLocalAppdata(
 				string.Format("{0}{1}{2}", cLastCheckFilenameStart, Process.GetCurrentProcess().Id, cLastCheckFileExtensionWithDot),
 				"AutoUpdater",
 				cLastCheckSubfolderName);
-		}
+		}*/
 		private static DateTime ParseLastCheckedFilecontentToDateTime(string fileContent)
 		{
 			DateTime tmpParsedDate;
@@ -385,20 +390,67 @@ namespace AutoUpdater
 				return DateTime.MinValue;
 			return tmpParsedDate;
 		}
-		private static void SetLastTimeCheckedAllForUpdates(DateTime time, Action<string> onError)
+		private static bool SetLastTimeCheckedAllForUpdates(DateTime time, Action<string> onError)
 		{
 			try
 			{
-				File.WriteAllText(GetFilePathToStoreLastTimeCheckedAllForUpdates(), time.ToString(cDateFormatForLastTimeCheckAllForUpdates));
+				return _lockSingleApp.ObtainApplicationLock(time.ToString(cDateFormatForLastTimeCheckAllForUpdates));
 			}
 			catch (Exception exc)
 			{
 				onError(exc.Message);
+				return false;
 			}
 		}
 		private static bool AlreadyCheckedForUpdatesRecentlyOrIsBusyCheckingInAnotherProcess()
 		{
-			string dir = Path.GetDirectoryName(SettingsInterop.GetFullFilePathInLocalAppdata("tmp.txt", "AutoUpdater", cLastCheckSubfolderName));
+			bool alreadyChecked = false;
+
+			if (_lockSingleApp.DoesAnotherProcessHaveTheLockAndIsRunning(
+				(fileToBeDeletedBecauseProcessNotRunning) =>
+				{
+					try
+					{
+						var timeCheckedByNotRunningApp = ParseLastCheckedFilecontentToDateTime(File.ReadAllText(fileToBeDeletedBecauseProcessNotRunning));
+						if (DateTime.Now.Subtract(timeCheckedByNotRunningApp) < cMinimumWaitAfterLastCheckAllForUpdates)//Do no check more than every 10 minutes
+						{
+							alreadyChecked = true;
+							return false;
+						}
+						else
+							return true;
+					}
+					catch { return true; }
+				}))
+			{
+				try
+				{
+					string filePathOfOtherProcessLock = _lockSingleApp.GetLockFilePathOfTheOtherProcessLock(null);
+
+					if (filePathOfOtherProcessLock != null)
+					{
+						var lastCheckOfProcessAlreadyRunning = ParseLastCheckedFilecontentToDateTime(File.ReadAllText(filePathOfOtherProcessLock));
+						if (DateTime.Now.Subtract(lastCheckOfProcessAlreadyRunning) < cMinimumWaitAfterLastCheckAllForUpdates)//Do no check more than every 10 minutes
+							alreadyChecked = true;
+						else
+							File.Delete(filePathOfOtherProcessLock);
+					}
+				}
+				catch { }
+
+				//Do not kill other process at this stage, what if it's AutoUpdater and its busy downloading updates, its just gonna get annoying
+				/*if (DateTime.Now.Subtract(lastCheckOfProcessAlreadyRunning) >= cMinimumWaitAfterLastCheckAllForUpdates)
+				{
+					//If another process is running and did check longer ago than or minimum wait time, kill the other process
+					proc.Kill();
+					File.Delete(fjsetFile);
+					continue;
+				}*/
+			}
+
+			return alreadyChecked;
+
+			/*string dir = Path.GetDirectoryName(SettingsInterop.GetFullFilePathInLocalAppdata("tmp.txt", "AutoUpdater", cLastCheckSubfolderName));
 			foreach (var fjsetFile in Directory.GetFiles(dir, "*" + cLastCheckFileExtensionWithDot, SearchOption.TopDirectoryOnly))
 			{
 				string filenameOnlyWithoutExtension = Path.GetFileNameWithoutExtension(fjsetFile);
@@ -434,16 +486,17 @@ namespace AutoUpdater
 					File.Delete(fjsetFile);
 			}
 
-			return false;
+			return false;*/
 		}
 
 		public static void CheckAndUpdateAllApplicationsToLatestVersion(Action<string> onError)
 		{
 			if (AlreadyCheckedForUpdatesRecentlyOrIsBusyCheckingInAnotherProcess())
 				return;
-			SetLastTimeCheckedAllForUpdates(DateTime.Now, onError);
 
 			if (onError == null) onError = delegate { };
+			if (!SetLastTimeCheckedAllForUpdates(DateTime.Now, onError))
+				return;
 
 			ConcurrentDictionary<string, PublishDetails> appsToBeUpdated = new ConcurrentDictionary<string, PublishDetails>();
 

@@ -41,7 +41,12 @@ namespace AutoUpdater
 			//list of Application Names, so we only have one WebRequest even when we call CheckAndUpdateAllApplicationsToLatestVersion
 
 			bool mustExit = false;
-			if (!WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
+			if (WasAlreadyCalledByIttself())//Check first if already called otherwise endless loop
+			{
+				mustExit = true;
+				AutoUpdating.RegisterUnhandledExceptionHandler();
+			}
+			else
 			{
 				AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates_ExceptionHandler();
 				//AutoUpdater.MainWindow.checkForUpdatesThread = AutoUpdating.CheckForUpdates(null, null);
@@ -49,8 +54,6 @@ namespace AutoUpdater
 				AutoUpdater.MainWindow
 					.CheckAndUpdateAllApplicationsToLatestVersion(err => UserMessages.ShowErrorMessage(err));
 			}
-			else
-				mustExit = true;
 
 			var args = Environment.GetCommandLineArgs();
 			//int remove;
